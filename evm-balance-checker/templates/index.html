@@ -227,6 +227,7 @@
             background-color: rgba(255,255,255,0.3);
             transition: .3s;
             border-radius: 26px;
+            border: 1px solid rgba(255,255,255,0.4);
         }
 
         .slider:before {
@@ -243,6 +244,7 @@
             align-items: center;
             justify-content: center;
             font-size: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
         }
 
         input:checked + .slider {
@@ -1293,7 +1295,7 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Resolving address and scanning chains...</p>
+            <p id="loadingMessage">Resolving address...</p>
         </div>
 
         <div class="results" id="results">
@@ -1438,6 +1440,38 @@
             }
         }
 
+        // Loading message cycling
+        const loadingMessages = [
+            "🔍 Resolving address...",
+            "⚡ Checking balances...",
+            "🌐 Scanning across chains...",
+            "🏦 Checking DeFi positions...",
+            "💰 Calculating USD rates...",
+            "🔎 Hang tight, found another position...",
+            "📊 Almost there...",
+            "🎨 Building the page...",
+            "⏳ Please stand by...",
+            "🚀 Finalizing results..."
+        ];
+
+        function startLoadingMessages() {
+            loadingMessageIndex = 0;
+            const loadingMessageEl = document.getElementById('loadingMessage');
+            loadingMessageEl.textContent = loadingMessages[0];
+            
+            loadingMessageInterval = setInterval(() => {
+                loadingMessageIndex = (loadingMessageIndex + 1) % loadingMessages.length;
+                loadingMessageEl.textContent = loadingMessages[loadingMessageIndex];
+            }, 4500); // Change message every 4.5 seconds
+        }
+
+        function stopLoadingMessages() {
+            if (loadingMessageInterval) {
+                clearInterval(loadingMessageInterval);
+                loadingMessageInterval = null;
+            }
+        }
+
         // Load saved theme
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
@@ -1460,6 +1494,8 @@
         let activeWalletFilter = 'all';
         let activeDefiFilter = 'all';
         let currentAddress = '';
+        let loadingMessageInterval = null;
+        let loadingMessageIndex = 0;
 
         // Map token symbols to CoinGecko IDs for icons
         const tokenToCoinGecko = {
@@ -1821,6 +1857,9 @@
             loading.classList.add('active');
             checkButton.disabled = true;
             
+            // Start cycling loading messages
+            startLoadingMessages();
+            
             // Show loading indicators
             document.getElementById('walletLoadingStatus').style.display = 'flex';
             document.getElementById('defiLoadingStatus').style.display = 'flex';
@@ -1871,6 +1910,9 @@
             } finally {
                 loading.classList.remove('active');
                 checkButton.disabled = false;
+                
+                // Stop cycling loading messages
+                stopLoadingMessages();
                 
                 // Hide loading indicators
                 document.getElementById('walletLoadingStatus').style.display = 'none';
