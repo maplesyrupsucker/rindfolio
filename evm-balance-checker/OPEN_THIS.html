@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Open Balance Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; margin-bottom: 30px; }
+        .button {
+            display: inline-block;
+            padding: 20px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .button:hover { transform: translateY(-2px); }
+        .info { margin-top: 30px; color: #666; }
+    </style>
+    <script>
+        setTimeout(function() {
+            window.location.href = 'http://localhost:5001';
+        }, 2000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Multi-Chain EVM Balance Checker</h1>
+        <p style="font-size: 18px; margin-bottom: 30px;">Redirecting to the app...</p>
+        <a href="http://localhost:5001" class="button">Click Here if Not Redirected</a>
+        <div class="info">
+            <p><strong>Correct URL:</strong> http://localhost:5001</p>
+            <p style="margin-top: 10px; font-size: 14px;">
+                If you see a Next.js error, you're on the wrong port!
+            </p>
+        </div>
+    </div>
+</body>
+</html>

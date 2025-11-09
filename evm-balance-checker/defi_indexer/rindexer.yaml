@@ -1,0 +1,116 @@
+name: defi_positions_indexer
+description: Auto-generated DeFi positions indexer with fallback ABIs
+project_type: no-code
+networks:
+- name: ethereum
+  chain_id: 1
+  rpc: ${ETHEREUM_RPC_URL}
+  contracts:
+  - name: aave-v3_ethereum_pool
+    address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
+    abi: ./abis/aave-v3_ethereum_pool.json
+    events:
+    - Supply
+    - Withdraw
+    - Borrow
+    - Repay
+    - LiquidationCall
+    start_block: latest
+  - name: uniswap-v3_ethereum_factory
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap-v3_ethereum_factory.json
+    events:
+    - PoolCreated
+    start_block: latest
+  - name: lido_ethereum_steth
+    address: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+    abi: ./abis/lido_ethereum_steth.json
+    events:
+    - Transfer
+    start_block: latest
+  - name: rocket-pool_ethereum_reth
+    address: '0xae78736Cd615f374D3085123A210448E74Fc6393'
+    abi: ./abis/rocket-pool_ethereum_reth.json
+    events:
+    - Transfer
+    start_block: latest
+- name: arbitrum
+  chain_id: 42161
+  rpc: ${ARBITRUM_RPC_URL}
+  contracts:
+  - name: aave-v3_arbitrum_pool
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave-v3_arbitrum_pool.json
+    events:
+    - Supply
+    - Withdraw
+    - Borrow
+    - Repay
+    start_block: latest
+  - name: uniswap-v3_arbitrum_factory
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap-v3_arbitrum_factory.json
+    events:
+    - PoolCreated
+    start_block: latest
+- name: polygon
+  chain_id: 137
+  rpc: ${POLYGON_RPC_URL}
+  contracts:
+  - name: aave-v3_polygon_pool
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave-v3_polygon_pool.json
+    events:
+    - Supply
+    - Withdraw
+    - Borrow
+    - Repay
+    start_block: latest
+  - name: uniswap-v3_polygon_factory
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap-v3_polygon_factory.json
+    events:
+    - PoolCreated
+    start_block: latest
+- name: optimism
+  chain_id: 10
+  rpc: ${OPTIMISM_RPC_URL}
+  contracts:
+  - name: aave-v3_optimism_pool
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave-v3_optimism_pool.json
+    events:
+    - Supply
+    - Withdraw
+    - Borrow
+    - Repay
+    start_block: latest
+  - name: uniswap-v3_optimism_factory
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap-v3_optimism_factory.json
+    events:
+    - PoolCreated
+    start_block: latest
+- name: base
+  chain_id: 8453
+  rpc: ${BASE_RPC_URL}
+  contracts:
+  - name: aave-v3_base_pool
+    address: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'
+    abi: ./abis/aave-v3_base_pool.json
+    events:
+    - Supply
+    - Withdraw
+    - Borrow
+    - Repay
+    start_block: latest
+  - name: uniswap-v3_base_factory
+    address: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD'
+    abi: ./abis/uniswap-v3_base_factory.json
+    events:
+    - PoolCreated
+    start_block: latest
+storage:
+  postgres:
+    enabled: true
+global_contracts: []

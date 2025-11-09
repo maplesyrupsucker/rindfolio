@@ -1,0 +1,64 @@
+[
+  {
+    "type": "event",
+    "name": "AddLiquidity",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "aumInUsdg",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "glpSupply",
+        "type": "uint256",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "RemoveLiquidity",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "glpAmount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "aumInUsdg",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "glpSupply",
+        "type": "uint256",
+        "indexed": false
+      }
+    ]
+  }
+]

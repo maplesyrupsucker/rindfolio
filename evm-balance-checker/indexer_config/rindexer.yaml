@@ -1,0 +1,235 @@
+name: defi_positions_indexer
+description: Production DeFi positions indexer - tracks lending, DEX, staking across
+  6 EVM chains
+project_type: no-code
+networks:
+- name: arbitrum
+  chain_id: 42161
+  rpc: ${ARBITRUM_RPC_URL}
+  contracts:
+  - name: aave_v3_pool_arbitrum
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave_v3_pool_arbitrum.json
+    events: &id001
+    - Supply
+    - Withdraw
+    - Borrow
+    - Repay
+    - LiquidationCall
+    - FlashLoan
+    - ReserveDataUpdated
+    - ReserveUsedAsCollateralEnabled
+    - ReserveUsedAsCollateralDisabled
+    start_block: 7740843
+  - name: compound_v3_usdc_arbitrum
+    address: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA'
+    abi: ./abis/compound_v3_usdc_arbitrum.json
+    events: &id004
+    - Supply
+    - Withdraw
+    - SupplyCollateral
+    - WithdrawCollateral
+    - AbsorbDebt
+    start_block: 70000000
+  - name: uniswap_v3_factory_arbitrum
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap_v3_factory_arbitrum.json
+    events: &id005
+    - PoolCreated
+    start_block: 165
+  - name: uniswap_v3_nft_manager_arbitrum
+    address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    abi: ./abis/uniswap_v3_nft_manager_arbitrum.json
+    events: &id006
+    - IncreaseLiquidity
+    - DecreaseLiquidity
+    - Collect
+    - Transfer
+    start_block: 195
+  - name: curve_registry_arbitrum
+    address: '0x445FE580eF8d70FF569aB36e80c647af338db351'
+    abi: ./abis/curve_registry_arbitrum.json
+    events: &id002
+    - PoolAdded
+    - PoolRemoved
+    start_block: 1362056
+  - name: balancer_v2_vault_arbitrum
+    address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+    abi: ./abis/balancer_v2_vault_arbitrum.json
+    events: &id007
+    - PoolBalanceChanged
+    - Swap
+    - PoolRegistered
+    start_block: 222
+  - name: gmx_glp_manager_arbitrum
+    address: '0x321F653eED006AD1C29D174e17d96351BDe22649'
+    abi: ./abis/gmx_glp_manager_arbitrum.json
+    events: &id003
+    - AddLiquidity
+    - RemoveLiquidity
+    start_block: 26956207
+- name: avalanche
+  chain_id: 43114
+  rpc: ${AVALANCHE_RPC_URL}
+  contracts:
+  - name: aave_v3_pool_avalanche
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave_v3_pool_avalanche.json
+    events: *id001
+    start_block: 11970477
+  - name: curve_registry_avalanche
+    address: '0x8474DdbE98F5aA3179B3B3F5942D724aFcdec9f6'
+    abi: ./abis/curve_registry_avalanche.json
+    events: *id002
+    start_block: 5254206
+  - name: gmx_glp_manager_avalanche
+    address: '0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F'
+    abi: ./abis/gmx_glp_manager_avalanche.json
+    events: *id003
+    start_block: 8933874
+- name: base
+  chain_id: 8453
+  rpc: ${BASE_RPC_URL}
+  contracts:
+  - name: aave_v3_pool_base
+    address: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'
+    abi: ./abis/aave_v3_pool_base.json
+    events: *id001
+    start_block: 1371680
+  - name: compound_v3_usdc_base
+    address: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
+    abi: ./abis/compound_v3_usdc_base.json
+    events: *id004
+    start_block: 1371680
+  - name: uniswap_v3_factory_base
+    address: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD'
+    abi: ./abis/uniswap_v3_factory_base.json
+    events: *id005
+    start_block: 1371680
+  - name: uniswap_v3_nft_manager_base
+    address: '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1'
+    abi: ./abis/uniswap_v3_nft_manager_base.json
+    events: *id006
+    start_block: 1371680
+  - name: balancer_v2_vault_base
+    address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+    abi: ./abis/balancer_v2_vault_base.json
+    events: *id007
+    start_block: 1371680
+- name: ethereum
+  chain_id: 1
+  rpc: ${ETHEREUM_RPC_URL}
+  contracts:
+  - name: aave_v3_pool_ethereum
+    address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
+    abi: ./abis/aave_v3_pool_ethereum.json
+    events: *id001
+    start_block: 16291127
+  - name: compound_v3_usdc_ethereum
+    address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3'
+    abi: ./abis/compound_v3_usdc_ethereum.json
+    events: *id004
+    start_block: 15331586
+  - name: uniswap_v3_factory_ethereum
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap_v3_factory_ethereum.json
+    events: *id005
+    start_block: 12369621
+  - name: uniswap_v3_nft_manager_ethereum
+    address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    abi: ./abis/uniswap_v3_nft_manager_ethereum.json
+    events: *id006
+    start_block: 12369651
+  - name: curve_registry_ethereum
+    address: '0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5'
+    abi: ./abis/curve_registry_ethereum.json
+    events: *id002
+    start_block: 12195750
+  - name: balancer_v2_vault_ethereum
+    address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+    abi: ./abis/balancer_v2_vault_ethereum.json
+    events: *id007
+    start_block: 12272146
+  - name: lido_steth_ethereum
+    address: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+    abi: ./abis/lido_steth_ethereum.json
+    events:
+    - Submitted
+    - Transfer
+    - SharesBurnt
+    start_block: 11473216
+  - name: rocket_pool_reth_ethereum
+    address: '0xae78736Cd615f374D3085123A210448E74Fc6393'
+    abi: ./abis/rocket_pool_reth_ethereum.json
+    events:
+    - Transfer
+    - TokensMinted
+    - TokensBurned
+    start_block: 13325304
+- name: optimism
+  chain_id: 10
+  rpc: ${OPTIMISM_RPC_URL}
+  contracts:
+  - name: aave_v3_pool_optimism
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave_v3_pool_optimism.json
+    events: *id001
+    start_block: 4365693
+  - name: uniswap_v3_factory_optimism
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap_v3_factory_optimism.json
+    events: *id005
+    start_block: 0
+  - name: uniswap_v3_nft_manager_optimism
+    address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    abi: ./abis/uniswap_v3_nft_manager_optimism.json
+    events: *id006
+    start_block: 0
+  - name: curve_registry_optimism
+    address: '0x445FE580eF8d70FF569aB36e80c647af338db351'
+    abi: ./abis/curve_registry_optimism.json
+    events: *id002
+    start_block: 0
+  - name: balancer_v2_vault_optimism
+    address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+    abi: ./abis/balancer_v2_vault_optimism.json
+    events: *id007
+    start_block: 0
+- name: polygon
+  chain_id: 137
+  rpc: ${POLYGON_RPC_URL}
+  contracts:
+  - name: aave_v3_pool_polygon
+    address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+    abi: ./abis/aave_v3_pool_polygon.json
+    events: *id001
+    start_block: 25825996
+  - name: compound_v3_usdc_polygon
+    address: '0xF25212E676D1F7F89Cd72fFEe66158f541246445'
+    abi: ./abis/compound_v3_usdc_polygon.json
+    events: *id004
+    start_block: 42000000
+  - name: uniswap_v3_factory_polygon
+    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+    abi: ./abis/uniswap_v3_factory_polygon.json
+    events: *id005
+    start_block: 22757547
+  - name: uniswap_v3_nft_manager_polygon
+    address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    abi: ./abis/uniswap_v3_nft_manager_polygon.json
+    events: *id006
+    start_block: 22757547
+  - name: curve_registry_polygon
+    address: '0x094d12e5b541784701FD8d65F11fc0598FBC6332'
+    abi: ./abis/curve_registry_polygon.json
+    events: *id002
+    start_block: 13991825
+  - name: balancer_v2_vault_polygon
+    address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+    abi: ./abis/balancer_v2_vault_polygon.json
+    events: *id007
+    start_block: 15832990
+storage:
+  postgres:
+    enabled: true
+global_contracts: []

@@ -1,0 +1,114 @@
+{
+  "generated_at": "2025-11-09T15:30:00.000000",
+  "chains": [
+    "ethereum",
+    "polygon",
+    "arbitrum",
+    "optimism",
+    "base"
+  ],
+  "protocols": [
+    "aave-v3",
+    "aave-v3",
+    "aave-v3",
+    "compound-v3",
+    "compound-v3",
+    "uniswap-v3",
+    "uniswap-v3",
+    "uniswap-v3",
+    "curve",
+    "lido",
+    "gmx"
+  ],
+  "contracts": [
+    {
+      "name": "aave-v3_ethereum",
+      "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+      "chain": "ethereum",
+      "protocol": "aave-v3",
+      "events": ["Supply", "Deposit", "Borrow", "Withdraw", "Repay", "Liquidate"],
+      "abi_path": "./abis/aave-v3_ethereum.json"
+    },
+    {
+      "name": "aave-v3_polygon",
+      "address": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "chain": "polygon",
+      "protocol": "aave-v3",
+      "events": ["Supply", "Deposit", "Borrow", "Withdraw", "Repay", "Liquidate"],
+      "abi_path": "./abis/aave-v3_polygon.json"
+    },
+    {
+      "name": "aave-v3_arbitrum",
+      "address": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "chain": "arbitrum",
+      "protocol": "aave-v3",
+      "events": ["Supply", "Deposit", "Borrow", "Withdraw", "Repay", "Liquidate"],
+      "abi_path": "./abis/aave-v3_arbitrum.json"
+    },
+    {
+      "name": "compound-v3_ethereum",
+      "address": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
+      "chain": "ethereum",
+      "protocol": "compound-v3",
+      "events": ["Supply", "Withdraw"],
+      "abi_path": "./abis/compound-v3_ethereum.json"
+    },
+    {
+      "name": "compound-v3_polygon",
+      "address": "0xF25212E676D1F7F89Cd72fFEe66158f541246445",
+      "chain": "polygon",
+      "protocol": "compound-v3",
+      "events": ["Supply", "Withdraw"],
+      "abi_path": "./abis/compound-v3_polygon.json"
+    },
+    {
+      "name": "uniswap-v3_ethereum",
+      "address": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "chain": "ethereum",
+      "protocol": "uniswap-v3",
+      "events": ["Mint", "Burn", "Swap"],
+      "abi_path": "./abis/uniswap-v3_ethereum.json"
+    },
+    {
+      "name": "uniswap-v3_polygon",
+      "address": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "chain": "polygon",
+      "protocol": "uniswap-v3",
+      "events": ["Mint", "Burn", "Swap"],
+      "abi_path": "./abis/uniswap-v3_polygon.json"
+    },
+    {
+      "name": "uniswap-v3_arbitrum",
+      "address": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "chain": "arbitrum",
+      "protocol": "uniswap-v3",
+      "events": ["Mint", "Burn", "Swap"],
+      "abi_path": "./abis/uniswap-v3_arbitrum.json"
+    },
+    {
+      "name": "curve_ethereum",
+      "address": "0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5",
+      "chain": "ethereum",
+      "protocol": "curve",
+      "events": ["AddLiquidity", "RemoveLiquidity", "Swap"],
+      "abi_path": "./abis/curve_ethereum.json"
+    },
+    {
+      "name": "lido_ethereum",
+      "address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+      "chain": "ethereum",
+      "protocol": "lido",
+      "events": ["Deposit", "Withdraw", "Transfer"],
+      "abi_path": "./abis/lido_ethereum.json"
+    },
+    {
+      "name": "gmx_arbitrum",
+      "address": "0x489ee077994B6658eAfA855C308275EAd8097C4A",
+      "chain": "arbitrum",
+      "protocol": "gmx",
+      "events": ["Deposit", "Withdraw", "Swap"],
+      "abi_path": "./abis/gmx_arbitrum.json"
+    }
+  ]
+}
+

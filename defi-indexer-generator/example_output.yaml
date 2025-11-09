@@ -1,0 +1,339 @@
+# Example Generated rindexer.yaml
+# This is what the generator produces
+
+name: defi_positions_indexer
+description: Auto-generated DeFi positions indexer from The Graph subgraphs
+project_type: no-code
+
+# Storage configuration
+storage:
+  postgres:
+    enabled: true
+
+# Global contract definitions (used across all networks)
+global_contracts:
+  - name: ERC20
+    abi: ./abis/erc20.json
+
+# Network configurations
+networks:
+  # === ETHEREUM MAINNET ===
+  ethereum:
+    chain_id: 1
+    rpc: https://eth.llamarpc.com
+    contracts:
+      # Aave V3 Pool
+      - name: Aave V3_ethereum
+        address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
+        abi: ./abis/aave-v3_ethereum.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - Borrow
+          - Repay
+          - LiquidationCall
+      
+      # Uniswap V3 Factory
+      - name: Uniswap V3_ethereum
+        address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+        abi: ./abis/uniswap-v3_ethereum.json
+        category: dex
+        events:
+          - Mint
+          - Burn
+          - Swap
+          - IncreaseLiquidity
+          - DecreaseLiquidity
+      
+      # Curve Registry
+      - name: Curve Finance_ethereum
+        address: '0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5'
+        abi: ./abis/curve_ethereum.json
+        category: dex
+        events:
+          - AddLiquidity
+          - RemoveLiquidity
+          - RemoveLiquidityOne
+          - TokenExchange
+      
+      # Compound V3
+      - name: Compound V3_ethereum
+        address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3'
+        abi: ./abis/compound-v3_ethereum.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - SupplyCollateral
+          - WithdrawCollateral
+      
+      # Lido stETH
+      - name: Lido_ethereum
+        address: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+        abi: ./abis/lido_ethereum.json
+        category: staking
+        events:
+          - Submitted
+          - Withdrawal
+          - Transfer
+      
+      # Yearn Vault
+      - name: Yearn Finance_ethereum
+        address: '0xdA816459F1AB5631232FE5e97a05BBBb94970c95'
+        abi: ./abis/yearn_ethereum.json
+        category: vault
+        events:
+          - Deposit
+          - Withdraw
+      
+      # Convex Booster
+      - name: Convex Finance_ethereum
+        address: '0xF403C135812408BFbE8713b5A23a04b3D48AAE31'
+        abi: ./abis/convex_ethereum.json
+        category: yield
+        events:
+          - Staked
+          - Withdrawn
+          - RewardPaid
+      
+      # Balancer V2 Vault
+      - name: Balancer V2_ethereum
+        address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+        abi: ./abis/balancer-v2_ethereum.json
+        category: dex
+        events:
+          - PoolBalanceChanged
+          - Swap
+          - PoolCreated
+      
+      # Rocket Pool rETH
+      - name: Rocket Pool_ethereum
+        address: '0xae78736Cd615f374D3085123A210448E74Fc6393'
+        abi: ./abis/rocket-pool_ethereum.json
+        category: staking
+        events:
+          - Deposit
+          - Withdrawal
+          - Transfer
+
+  # === ARBITRUM ONE ===
+  arbitrum:
+    chain_id: 42161
+    rpc: https://arb1.arbitrum.io/rpc
+    contracts:
+      # Aave V3 Pool
+      - name: Aave V3_arbitrum
+        address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+        abi: ./abis/aave-v3_arbitrum.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - Borrow
+          - Repay
+          - LiquidationCall
+      
+      # Uniswap V3 Factory
+      - name: Uniswap V3_arbitrum
+        address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+        abi: ./abis/uniswap-v3_arbitrum.json
+        category: dex
+        events:
+          - Mint
+          - Burn
+          - Swap
+          - IncreaseLiquidity
+          - DecreaseLiquidity
+      
+      # Curve Registry
+      - name: Curve Finance_arbitrum
+        address: '0x445FE580eF8d70FF569aB36e80c647af338db351'
+        abi: ./abis/curve_arbitrum.json
+        category: dex
+        events:
+          - AddLiquidity
+          - RemoveLiquidity
+          - TokenExchange
+      
+      # Compound V3
+      - name: Compound V3_arbitrum
+        address: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA'
+        abi: ./abis/compound-v3_arbitrum.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - SupplyCollateral
+          - WithdrawCollateral
+      
+      # Yearn Vault
+      - name: Yearn Finance_arbitrum
+        address: '0x239e14A19DFF93a17339DCC444f74406C17f8E67'
+        abi: ./abis/yearn_arbitrum.json
+        category: vault
+        events:
+          - Deposit
+          - Withdraw
+      
+      # Balancer V2 Vault
+      - name: Balancer V2_arbitrum
+        address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+        abi: ./abis/balancer-v2_arbitrum.json
+        category: dex
+        events:
+          - PoolBalanceChanged
+          - Swap
+      
+      # GMX Vault
+      - name: GMX_arbitrum
+        address: '0x489ee077994B6658eAfA855C308275EAd8097C4A'
+        abi: ./abis/gmx_arbitrum.json
+        category: perp
+        events:
+          - Stake
+          - Unstake
+          - AddLiquidity
+          - RemoveLiquidity
+
+  # === POLYGON ===
+  polygon:
+    chain_id: 137
+    rpc: https://polygon-rpc.com
+    contracts:
+      # Aave V3 Pool
+      - name: Aave V3_polygon
+        address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+        abi: ./abis/aave-v3_polygon.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - Borrow
+          - Repay
+          - LiquidationCall
+      
+      # Uniswap V3 Factory
+      - name: Uniswap V3_polygon
+        address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+        abi: ./abis/uniswap-v3_polygon.json
+        category: dex
+        events:
+          - Mint
+          - Burn
+          - Swap
+      
+      # Curve Registry
+      - name: Curve Finance_polygon
+        address: '0x094d12e5b541784701FD8d65F11fc0598FBC6332'
+        abi: ./abis/curve_polygon.json
+        category: dex
+        events:
+          - AddLiquidity
+          - RemoveLiquidity
+          - TokenExchange
+      
+      # Compound V3
+      - name: Compound V3_polygon
+        address: '0xF25212E676D1F7F89Cd72fFEe66158f541246445'
+        abi: ./abis/compound-v3_polygon.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+      
+      # Balancer V2 Vault
+      - name: Balancer V2_polygon
+        address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+        abi: ./abis/balancer-v2_polygon.json
+        category: dex
+        events:
+          - PoolBalanceChanged
+          - Swap
+
+  # === OPTIMISM ===
+  optimism:
+    chain_id: 10
+    rpc: https://mainnet.optimism.io
+    contracts:
+      # Aave V3 Pool
+      - name: Aave V3_optimism
+        address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+        abi: ./abis/aave-v3_optimism.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - Borrow
+          - Repay
+      
+      # Uniswap V3 Factory
+      - name: Uniswap V3_optimism
+        address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+        abi: ./abis/uniswap-v3_optimism.json
+        category: dex
+        events:
+          - Mint
+          - Burn
+          - Swap
+      
+      # Curve Registry
+      - name: Curve Finance_optimism
+        address: '0xC5cfaDA84E902aD92DD40194f0883ad49639b023'
+        abi: ./abis/curve_optimism.json
+        category: dex
+        events:
+          - AddLiquidity
+          - RemoveLiquidity
+
+  # === AVALANCHE ===
+  avalanche:
+    chain_id: 43114
+    rpc: https://api.avax.network/ext/bc/C/rpc
+    contracts:
+      # Aave V3 Pool
+      - name: Aave V3_avalanche
+        address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+        abi: ./abis/aave-v3_avalanche.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - Borrow
+          - Repay
+      
+      # GMX Vault
+      - name: GMX_avalanche
+        address: '0x489ee077994B6658eAfA855C308275EAd8097C4A'
+        abi: ./abis/gmx_avalanche.json
+        category: perp
+        events:
+          - Stake
+          - Unstake
+
+  # === BASE ===
+  base:
+    chain_id: 8453
+    rpc: https://mainnet.base.org
+    contracts:
+      # Aave V3 Pool
+      - name: Aave V3_base
+        address: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'
+        abi: ./abis/aave-v3_base.json
+        category: lending
+        events:
+          - Supply
+          - Withdraw
+          - Borrow
+          - Repay
+      
+      # Uniswap V3 Factory
+      - name: Uniswap V3_base
+        address: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD'
+        abi: ./abis/uniswap-v3_base.json
+        category: dex
+        events:
+          - Mint
+          - Burn
+          - Swap
+

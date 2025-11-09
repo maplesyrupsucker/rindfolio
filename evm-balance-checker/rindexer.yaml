@@ -1,0 +1,5 @@
+name: defi_positions_indexer
+description: Auto-generated DeFi positions indexer from The Graph subgraphs
+project_type: no-code
+networks: {}
+contracts: []

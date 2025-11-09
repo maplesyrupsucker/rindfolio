@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Chain Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root[data-theme="light"] {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --card-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-color: #e0e0e0;
+            --hover-bg: #f8f9fa;
+            --button-hover: #e8e9ea;
+            --shadow: rgba(0,0,0,0.1);
+            --shadow-hover: rgba(0,0,0,0.15);
+            --accent-primary: #667eea;
+            --accent-secondary: #764ba2;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --card-bg: #0f3460;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #808080;
+            --border-color: #1e3a5f;
+            --hover-bg: #1a4d7a;
+            --button-hover: #2a5d8a;
+            --shadow: rgba(0,0,0,0.3);
+            --shadow-hover: rgba(0,0,0,0.5);
+            --accent-primary: #667eea;
+            --accent-secondary: #764ba2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-weight: 700;
+        }
+
+        .header-controls {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card-bg);
+            padding: 8px 12px;
+            border-radius: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .refresh-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .refresh-icon:hover {
+            background: var(--hover-bg);
+            color: var(--accent-primary);
+            transform: rotate(180deg);
+        }
+
+        .refresh-icon.spinning {
+            color: var(--accent-primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-icon:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .refresh-icon:disabled svg {
+            animation: none;
+        }
+
+        .controls-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+        }
+
+        /* Loading indicator for chains */
+        .chain-loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75em;
+            color: var(--text-tertiary);
+            margin-left: 8px;
+        }
+
+        .chain-loading-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--hover-bg);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Toggle Switch */
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.3);
+            transition: .3s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "🌙";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        input:checked + .slider {
+            background-color: rgba(255,255,255,0.5);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+            content: "☀️";
+        }
+
+        .slider:hover {
+            background-color: rgba(255,255,255,0.4);
+        }
+
+        .search-box {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px var(--shadow);
+            margin-bottom: 25px;
+            transition: background 0.3s ease;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .saved-addresses {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .saved-address {
+            padding: 8px 14px;
+            background: var(--hover-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .saved-address:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .saved-address .remove {
+            color: #dc3545;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.1em;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--text-primary);
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .cache-info {
+            font-size: 0.8em;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cache-info.cached {
+            color: #28a745;
+        }
+
+        .total-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .summary-label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .chain-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--hover-bg);
+            border-radius: 10px;
+        }
+
+        .chain-filter {
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .chain-filter:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .chain-filter.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .wide-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 20px;
+            align-items: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .wide-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px var(--shadow-hover);
+        }
+
+        .token-icon-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .token-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .token-icon img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .token-icon .token-fallback {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .token-info {
+            flex: 1;
+        }
+
+        .token-symbol {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .token-chain {
+            font-size: 0.85em;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .token-amount {
+            text-align: right;
+            min-width: 180px;
+        }
+
+        .amount-value {
+            font-size: 1.15em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .amount-label {
+            font-size: 0.8em;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .usd-value {
+            text-align: right;
+            min-width: 150px;
+        }
+
+        .usd-amount {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #28a745;
+        }
+
+        .defi-card {
+            border-left-color: #764ba2;
+        }
+
+        .protocol-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%);
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #667eea;
+            margin-left: 8px;
+        }
+
+        .position-type {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .error {
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: var(--hover-bg);
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Charts Section */
+        .charts-section {
+            margin-top: 30px;
+            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .chart-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .chart-toggle-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .chart-toggle-btn.active {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .chart-toggle-btn:hover:not(.active) {
+            background: var(--button-hover);
+            color: var(--text-primary);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .chain-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--hover-bg);
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .chain-icon-img {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+        }
+
+        @media (max-width: 1024px) {
+            .wide-card {
+                grid-template-columns: auto 1fr;
+                gap: 15px;
+            }
+
+            .token-amount, .usd-value {
+                grid-column: 2;
+                text-align: left;
+            }
+
+            .theme-toggle {
+                position: static;
+                margin: 10px auto;
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .wide-card {
+                padding: 15px;
+            }
+
+            .summary-value {
+                font-size: 1.8em;
+            }
+        }
+
+        /* Smooth transitions for theme switching */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-controls">
+                <button class="refresh-icon" id="refreshIcon" onclick="handleRefreshClick()" title="Tap to refresh • Double-tap to clear cache" style="display:none;">
+                    ↻
+                </button>
+                <div class="controls-divider" id="controlsDivider" style="display:none;"></div>
+                <label class="theme-switch" title="Toggle theme">
+                    <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <h1>🌐 Multi-Chain Portfolio Tracker</h1>
+        </div>
+
+        <div class="search-box">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="addressInput" 
+                    placeholder="Enter address or ENS name (e.g., vitalik.eth)"
+                    value=""
+                >
+                <button id="checkButton" onclick="checkAddress()">Check Address</button>
+            </div>
+            <div id="savedAddresses" class="saved-addresses"></div>
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Resolving address and scanning chains...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="card">
+                <div class="card-header">
+                    <h2>💰 Portfolio Summary</h2>
+                    <div class="cache-info" id="cacheInfo"></div>
+                </div>
+                <div class="total-summary">
+                    <div class="summary-card">
+                        <div class="summary-label">Total Value</div>
+                        <div class="summary-value mono" id="totalValue">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Wallet Tokens</div>
+                        <div class="summary-value mono" id="walletValue">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">DeFi Positions</div>
+                        <div class="summary-value mono" id="defiValue">$0</div>
+                    </div>
+                </div>
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span>📊 Tokens:</span>
+                        <span class="stat-value mono" id="tokenCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>🏦 Positions:</span>
+                        <span class="stat-value mono" id="positionCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>⛓️ Chains:</span>
+                        <span class="stat-value mono" id="chainCount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Portfolio Distribution</h3>
+                        <div class="chart-toggle">
+                            <button class="chart-toggle-btn active" onclick="switchPortfolioChart('token')">By Token</button>
+                            <button class="chart-toggle-btn" onclick="switchPortfolioChart('chain')">By Chain</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">DeFi Distribution</h3>
+                        <div class="chart-toggle">
+                            <button class="chart-toggle-btn active" onclick="switchDefiChart('protocol')">By Protocol</button>
+                            <button class="chart-toggle-btn" onclick="switchDefiChart('chain')">By Chain</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="defiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>💎 Wallet Tokens</h2>
+                    <div id="walletLoadingStatus" class="chain-loading" style="display: none;">
+                        <div class="chain-loading-spinner"></div>
+                        <span id="walletLoadingText">Loading...</span>
+                    </div>
+                </div>
+                <div class="chain-filters" id="walletFilters">
+                    <div class="chain-filter active" data-chain="all">All Chains</div>
+                    <div class="chain-filter" data-chain="Ethereum">🔷 Ethereum</div>
+                    <div class="chain-filter" data-chain="Arbitrum">🔵 Arbitrum</div>
+                    <div class="chain-filter" data-chain="Polygon">🟣 Polygon</div>
+                    <div class="chain-filter" data-chain="Avalanche">🔴 Avalanche</div>
+                    <div class="chain-filter" data-chain="BNB Chain">🟡 BNB Chain</div>
+                </div>
+                <div id="walletBalances"></div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>🏦 DeFi Positions</h2>
+                    <div id="defiLoadingStatus" class="chain-loading" style="display: none;">
+                        <div class="chain-loading-spinner"></div>
+                        <span id="defiLoadingText">Loading...</span>
+                    </div>
+                </div>
+                <div class="chain-filters" id="defiFilters">
+                    <div class="chain-filter active" data-chain="all">All Chains</div>
+                    <div class="chain-filter" data-chain="Ethereum">🔷 Ethereum</div>
+                    <div class="chain-filter" data-chain="Arbitrum">🔵 Arbitrum</div>
+                    <div class="chain-filter" data-chain="Polygon">🟣 Polygon</div>
+                    <div class="chain-filter" data-chain="Avalanche">🔴 Avalanche</div>
+                    <div class="chain-filter" data-chain="BNB Chain">🟡 BNB Chain</div>
+                </div>
+                <div id="defiPositions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        function toggleTheme() {
+            const toggle = document.getElementById('themeToggle');
+            const newTheme = toggle.checked ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Refresh charts to update colors
+            if (portfolioChart && allWalletBalances.length > 0) {
+                createPortfolioChart(portfolioChartMode);
+            }
+            if (defiChart && allDefiPositions.length > 0) {
+                createDefiChart(defiChartMode);
+            }
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeToggle').checked = savedTheme === 'light';
+
+        // Local Storage Manager
+        const CACHE_KEY = 'portfolio_cache';
+        const SAVED_ADDRESSES_KEY = 'saved_addresses';
+        const ICON_CACHE_KEY = 'token_icon_cache';
+        const CACHE_DURATION = 0; // DISABLED FOR TESTING
+        const ICON_CACHE_DURATION = 0; // DISABLED FOR TESTING
+        
+        // Clear all caches on load for testing
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(ICON_CACHE_KEY);
+        console.log('🧹 All caches cleared for testing');
+
+        let allWalletBalances = [];
+        let allDefiPositions = [];
+        let activeWalletFilter = 'all';
+        let activeDefiFilter = 'all';
+        let currentAddress = '';
+
+        // Map token symbols to CoinGecko IDs for icons
+        const tokenToCoinGecko = {
+            'ETH': 'ethereum', 'WETH': 'ethereum',
+            'USDC': 'usd-coin', 'USDT': 'tether', 'DAI': 'dai',
+            'WBTC': 'wrapped-bitcoin', 'BTCB': 'bitcoin',
+            'AAVE': 'aave', 'UNI': 'uniswap', 'LINK': 'chainlink',
+            'ARB': 'arbitrum', 'MATIC': 'matic-network', 'WMATIC': 'matic-network',
+            'AVAX': 'avalanche-2', 'WAVAX': 'avalanche-2',
+            'BNB': 'binancecoin', 'WBNB': 'binancecoin',
+            'CAKE': 'pancakeswap-token', 'stETH': 'lido-staked-ether', 'wstETH': 'wrapped-steth',
+            'rETH': 'rocket-pool-eth', 'GMX': 'gmx', 'GLP': 'gmx',
+            'JOE': 'joe', 'CRV': 'curve-dao-token',
+            'CVX': 'convex-finance', 'SUSHI': 'sushi', 'BAL': 'balancer',
+            'FRAX': 'frax', 'FXS': 'frax-share'
+        };
+
+        const chainInfo = {
+            'Ethereum': { coingecko: 'ethereum', color: '#627EEA' },
+            'Arbitrum One': { coingecko: 'arbitrum', color: '#28A0F0' },
+            'Polygon': { coingecko: 'matic-network', color: '#8247E5' },
+            'Avalanche': { coingecko: 'avalanche-2', color: '#E84142' },
+            'BNB Chain': { coingecko: 'binancecoin', color: '#F3BA2F' }
+        };
+
+        const chartColors = [
+            '#667eea', '#764ba2', '#f093fb', '#4facfe',
+            '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+            '#a8edea', '#fed6e3', '#c471f5', '#fa71cd'
+        ];
+
+        let portfolioChart = null;
+        let defiChart = null;
+        let portfolioChartMode = 'token';
+        let defiChartMode = 'protocol';
+        let lastRefreshClick = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedAddresses();
+        });
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+
+        function formatTokenAmount(amount) {
+            const num = parseFloat(amount);
+            if (num >= 1000) {
+                return new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(num);
+            }
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+            }).format(num);
+        }
+
+        function getTokenIcon(symbol) {
+            // Map common tokens to their icon URLs
+            const tokenIconMap = {
+                'ETH': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png',
+                'WETH': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png',
+                'USDC': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+                'USDT': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png',
+                'DAI': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
+                'WBTC': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png',
+                'AAVE': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9/logo.png',
+                'UNI': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984/logo.png',
+                'LINK': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png',
+                'MATIC': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png',
+                'WMATIC': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png',
+                'BNB': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png',
+                'WBNB': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png',
+                'AVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png',
+                'WAVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png'
+            };
+            
+            const iconUrl = tokenIconMap[symbol];
+            
+            if (iconUrl) {
+                return `<img src="${iconUrl}" 
+                             alt="${symbol}" 
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\\'token-fallback\\'>${symbol.substring(0, 3).toUpperCase()}</span>'">`;
+            }
+            
+            // Fallback to text
+            return `<span class="token-fallback">${symbol.substring(0, 3).toUpperCase()}</span>`;
+        }
+
+        function getChainIcon(chainName) {
+            const chain = chainInfo[chainName];
+            if (!chain) return chainName;
+            
+            // Use emoji/text fallback for now to avoid CORS issues
+            const chainEmojis = {
+                'Ethereum': '🔷',
+                'Arbitrum One': '🔵',
+                'Polygon': '🟣',
+                'Avalanche': '🔴',
+                'BNB Chain': '🟡'
+            };
+            
+            const emoji = chainEmojis[chainName] || '⛓️';
+            return `<span class="chain-icon">${emoji} ${chainName}</span>`;
+        }
+
+        function handleRefreshClick() {
+            const now = Date.now();
+            const timeSinceLastClick = now - lastRefreshClick;
+            
+            if (timeSinceLastClick < 500) {
+                // Double click detected - force refresh with cache clear
+                console.log('Double-tap detected: Force refresh with cache clear');
+                forceRefresh();
+            } else {
+                // Single click - refresh with existing cache strategy
+                console.log('Single tap: Normal refresh');
+                if (currentAddress) {
+                    checkAddress();
+                }
+            }
+            
+            lastRefreshClick = now;
+        }
+
+        function clearAllCaches() {
+            // Clear portfolio cache
+            localStorage.removeItem(CACHE_KEY);
+            // Clear icon cache
+            localStorage.removeItem(ICON_CACHE_KEY);
+            console.log('All caches cleared');
+        }
+
+        function getCachedData(address) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                const cached = cache[address.toLowerCase()];
+                if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+                    return cached.data;
+                }
+            } catch (e) {
+                console.error('Error reading cache:', e);
+            }
+            return null;
+        }
+
+        function setCachedData(address, data) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                cache[address.toLowerCase()] = {
+                    data: data,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+            } catch (e) {
+                console.error('Error writing cache:', e);
+            }
+        }
+
+        function saveAddress(address) {
+            try {
+                let saved = JSON.parse(localStorage.getItem(SAVED_ADDRESSES_KEY) || '[]');
+                const addr = address.toLowerCase();
+                saved = saved.filter(a => a !== addr);
+                saved.unshift(addr);
+                saved = saved.slice(0, 5);
+                localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(saved));
+                loadSavedAddresses();
+            } catch (e) {
+                console.error('Error saving address:', e);
+            }
+        }
+
+        function loadSavedAddresses() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(SAVED_ADDRESSES_KEY) || '[]');
+                const container = document.getElementById('savedAddresses');
+                if (saved.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-tertiary); font-size: 0.9em;">No saved addresses yet</div>';
+                    return;
+                }
+                container.innerHTML = saved.map(addr => `
+                    <div class="saved-address" onclick="loadAddress('${addr}')">
+                        <span>${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}</span>
+                        <span class="remove" onclick="event.stopPropagation(); removeAddress('${addr}')">×</span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading saved addresses:', e);
+            }
+        }
+
+        function removeAddress(address) {
+            try {
+                let saved = JSON.parse(localStorage.getItem(SAVED_ADDRESSES_KEY) || '[]');
+                saved = saved.filter(a => a !== address.toLowerCase());
+                localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(saved));
+                loadSavedAddresses();
+            } catch (e) {
+                console.error('Error removing address:', e);
+            }
+        }
+
+        function loadAddress(address) {
+            document.getElementById('addressInput').value = address;
+            checkAddress();
+        }
+
+        function forceRefresh() {
+            if (currentAddress) {
+                const refreshIcon = document.getElementById('refreshIcon');
+                refreshIcon.classList.add('spinning');
+                
+                // Clear only the current address cache (not icon cache)
+                try {
+                    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                    delete cache[currentAddress.toLowerCase()];
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+                    console.log(`Cache cleared for ${currentAddress}`);
+                } catch (e) {
+                    console.error('Error clearing cache:', e);
+                }
+                
+                // Fetch fresh data
+                checkAddress(true).finally(() => {
+                    setTimeout(() => {
+                        refreshIcon.classList.remove('spinning');
+                    }, 500);
+                });
+            }
+        }
+
+        // Production-ready cache management
+        function getCacheStats() {
+            const portfolioCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+            const iconCache = JSON.parse(localStorage.getItem(ICON_CACHE_KEY) || '{}');
+            
+            return {
+                portfolioEntries: Object.keys(portfolioCache).length,
+                iconEntries: Object.keys(iconCache).length,
+                portfolioSize: new Blob([JSON.stringify(portfolioCache)]).size,
+                iconSize: new Blob([JSON.stringify(iconCache)]).size
+            };
+        }
+
+        function pruneOldCaches() {
+            // Remove expired entries from caches
+            const now = Date.now();
+            
+            // Prune portfolio cache
+            try {
+                const portfolioCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                let pruned = 0;
+                Object.keys(portfolioCache).forEach(key => {
+                    if (now - portfolioCache[key].timestamp > CACHE_DURATION) {
+                        delete portfolioCache[key];
+                        pruned++;
+                    }
+                });
+                if (pruned > 0) {
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(portfolioCache));
+                    console.log(`Pruned ${pruned} expired portfolio cache entries`);
+                }
+            } catch (e) {
+                console.error('Error pruning portfolio cache:', e);
+            }
+            
+            // Prune icon cache
+            try {
+                const iconCache = JSON.parse(localStorage.getItem(ICON_CACHE_KEY) || '{}');
+                let pruned = 0;
+                Object.keys(iconCache).forEach(key => {
+                    if (now - iconCache[key].timestamp > ICON_CACHE_DURATION) {
+                        delete iconCache[key];
+                        pruned++;
+                    }
+                });
+                if (pruned > 0) {
+                    localStorage.setItem(ICON_CACHE_KEY, JSON.stringify(iconCache));
+                    console.log(`Pruned ${pruned} expired icon cache entries`);
+                }
+            } catch (e) {
+                console.error('Error pruning icon cache:', e);
+            }
+        }
+
+        // Run cache pruning on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            pruneOldCaches();
+            console.log('Cache stats:', getCacheStats());
+        });
+
+        async function resolveENS(input) {
+            if (input.startsWith('0x') && input.length === 42) {
+                return input;
+            }
+
+            try {
+                const response = await fetch(`/api/resolve-ens/${encodeURIComponent(input)}`);
+                const data = await response.json();
+                if (response.ok && data.address) {
+                    return data.address;
+                } else {
+                    throw new Error(data.error || 'Failed to resolve ENS');
+                }
+            } catch (err) {
+                throw new Error(`ENS resolution failed: ${err.message}`);
+            }
+        }
+
+        async function checkAddress(forceRefresh = false) {
+            const input = document.getElementById('addressInput').value.trim();
+            if (!input) {
+                document.getElementById('errorMessage').textContent = 'Please enter an address or ENS name';
+                document.getElementById('errorMessage').classList.add('active');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('errorMessage');
+            const checkButton = document.getElementById('checkButton');
+            const refreshIcon = document.getElementById('refreshIcon');
+
+            error.classList.remove('active');
+            results.classList.remove('active');
+            loading.classList.add('active');
+            checkButton.disabled = true;
+            
+            // Show loading indicators
+            document.getElementById('walletLoadingStatus').style.display = 'flex';
+            document.getElementById('defiLoadingStatus').style.display = 'flex';
+            document.getElementById('walletLoadingText').textContent = 'Fetching wallet balances...';
+            document.getElementById('defiLoadingText').textContent = 'Fetching DeFi positions...';
+
+            try {
+                const address = await resolveENS(input);
+                currentAddress = address;
+
+                if (!forceRefresh) {
+                    const cached = getCachedData(address);
+                    if (cached) {
+                        console.log('Using cached data');
+                        allWalletBalances = cached.wallet_balances;
+                        allDefiPositions = cached.defi_positions;
+                        displayResults(cached, true);
+                        results.classList.add('active');
+                        loading.classList.remove('active');
+                        checkButton.disabled = false;
+                        refreshIcon.style.display = 'flex';
+                        document.getElementById('controlsDivider').style.display = 'block';
+                        saveAddress(address);
+                        return;
+                    }
+                }
+
+                const response = await fetch(`/api/check/${address}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch data');
+                }
+
+                allWalletBalances = data.wallet_balances;
+                allDefiPositions = data.defi_positions;
+                
+                setCachedData(address, data);
+                
+                displayResults(data, false);
+                results.classList.add('active');
+                refreshIcon.style.display = 'flex';
+                document.getElementById('controlsDivider').style.display = 'block';
+                saveAddress(address);
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+                checkButton.disabled = false;
+                
+                // Hide loading indicators
+                document.getElementById('walletLoadingStatus').style.display = 'none';
+                document.getElementById('defiLoadingStatus').style.display = 'none';
+            }
+        }
+
+        function displayResults(data, fromCache) {
+            const cacheInfo = document.getElementById('cacheInfo');
+            if (fromCache) {
+                const age = Math.floor((Date.now() - getCachedTimestamp(currentAddress)) / 1000 / 60);
+                cacheInfo.innerHTML = `📦 Cached (${age}m ago)`;
+                cacheInfo.classList.add('cached');
+            } else {
+                cacheInfo.innerHTML = `✨ Live data`;
+                cacheInfo.classList.remove('cached');
+            }
+
+            document.getElementById('totalValue').textContent = `$${formatNumber(data.total_value_usd)}`;
+            document.getElementById('walletValue').textContent = `$${formatNumber(data.wallet_value_usd)}`;
+            document.getElementById('defiValue').textContent = `$${formatNumber(data.defi_value_usd)}`;
+
+            // Stats
+            const uniqueChains = new Set([...data.wallet_balances.map(b => b.chain), ...data.defi_positions.map(p => p.chain)]);
+            document.getElementById('tokenCount').textContent = data.wallet_balances.length;
+            document.getElementById('positionCount').textContent = data.defi_positions.length;
+            document.getElementById('chainCount').textContent = uniqueChains.size;
+
+            displayWalletBalances();
+            displayDefiPositions();
+            setupFilters();
+            
+            // Create charts
+            if (allWalletBalances.length > 0) {
+                createPortfolioChart(portfolioChartMode);
+            }
+            if (allDefiPositions.length > 0) {
+                createDefiChart(defiChartMode);
+            }
+        }
+
+        function getCachedTimestamp(address) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                return cache[address.toLowerCase()]?.timestamp || Date.now();
+            } catch {
+                return Date.now();
+            }
+        }
+
+        function displayWalletBalances() {
+            const container = document.getElementById('walletBalances');
+            const filtered = activeWalletFilter === 'all' 
+                ? allWalletBalances 
+                : allWalletBalances.filter(b => b.chain === activeWalletFilter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💎</div><p>No wallet tokens found</p></div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(balance => `
+                <div class="wide-card">
+                    <div class="token-icon-wrapper">
+                        <div class="token-icon">
+                            ${getTokenIcon(balance.symbol)}
+                        </div>
+                        <div class="token-info">
+                            <div class="token-symbol">${balance.symbol}</div>
+                            <div class="token-chain">${getChainIcon(balance.chain)}</div>
+                        </div>
+                    </div>
+                    <div class="token-amount">
+                        <div class="amount-value mono">${formatTokenAmount(balance.balance)}</div>
+                        <div class="amount-label">${balance.symbol}</div>
+                    </div>
+                    <div class="usd-value">
+                        <div class="usd-amount mono">$${formatNumber(balance.balance_usd)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayDefiPositions() {
+            const container = document.getElementById('defiPositions');
+            const filtered = activeDefiFilter === 'all' 
+                ? allDefiPositions 
+                : allDefiPositions.filter(p => p.chain === activeDefiFilter);
+
+            console.log('Displaying DeFi positions:', filtered);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏦</div><p>No DeFi positions found</p></div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(position => {
+                const valueUsd = parseFloat(position.value_usd) || 0;
+                console.log(`Position: ${position.protocol} - ${position.token} = $${valueUsd}`);
+                
+                return `
+                <div class="wide-card defi-card">
+                    <div class="token-icon-wrapper">
+                        <div class="token-icon">
+                            ${getTokenIcon(position.token.split('/')[0])}
+                        </div>
+                        <div class="token-info">
+                            <div class="token-symbol">
+                                ${position.token}
+                                <span class="protocol-badge">${position.protocol}</span>
+                            </div>
+                            <div class="position-type">${position.position_type} • ${getChainIcon(position.chain)}</div>
+                        </div>
+                    </div>
+                    <div class="token-amount">
+                        <div class="amount-value mono">${formatTokenAmount(position.amount)}</div>
+                        <div class="amount-label">${position.token}</div>
+                    </div>
+                    <div class="usd-value">
+                        <div class="usd-amount mono">$${formatNumber(valueUsd)}</div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function setupFilters() {
+            document.querySelectorAll('#walletFilters .chain-filter').forEach(filter => {
+                filter.addEventListener('click', () => {
+                    document.querySelectorAll('#walletFilters .chain-filter').forEach(f => f.classList.remove('active'));
+                    filter.classList.add('active');
+                    activeWalletFilter = filter.dataset.chain;
+                    displayWalletBalances();
+                });
+            });
+
+            document.querySelectorAll('#defiFilters .chain-filter').forEach(filter => {
+                filter.addEventListener('click', () => {
+                    document.querySelectorAll('#defiFilters .chain-filter').forEach(f => f.classList.remove('active'));
+                    filter.classList.add('active');
+                    activeDefiFilter = filter.dataset.chain;
+                    displayDefiPositions();
+                });
+            });
+        }
+
+        document.getElementById('addressInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAddress();
+            }
+        });
+
+        // Chart Functions
+        function getChartTextColor() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+        }
+
+        function getChartBackgroundColor() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim();
+        }
+
+        function createPortfolioChart(mode) {
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+            
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+
+            let data, labels;
+            
+            if (mode === 'token') {
+                // Group by token
+                const tokenData = {};
+                allWalletBalances.forEach(balance => {
+                    if (!tokenData[balance.symbol]) {
+                        tokenData[balance.symbol] = 0;
+                    }
+                    tokenData[balance.symbol] += balance.balance_usd;
+                });
+                
+                // Sort by value and take top 10
+                const sorted = Object.entries(tokenData)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+                
+                labels = sorted.map(([token]) => token);
+                data = sorted.map(([, value]) => value);
+            } else {
+                // Group by chain
+                const chainData = {};
+                allWalletBalances.forEach(balance => {
+                    if (!chainData[balance.chain]) {
+                        chainData[balance.chain] = 0;
+                    }
+                    chainData[balance.chain] += balance.balance_usd;
+                });
+                
+                labels = Object.keys(chainData);
+                data = Object.values(chainData);
+            }
+
+            portfolioChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: chartColors,
+                        borderWidth: 2,
+                        borderColor: getChartBackgroundColor()
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: getChartTextColor(),
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: $${formatNumber(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 800,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        function createDefiChart(mode) {
+            const ctx = document.getElementById('defiChart').getContext('2d');
+            
+            if (defiChart) {
+                defiChart.destroy();
+            }
+
+            // Check if we have DeFi positions
+            console.log('createDefiChart called with mode:', mode);
+            console.log('allDefiPositions:', allDefiPositions);
+            
+            if (!allDefiPositions || allDefiPositions.length === 0) {
+                console.log('❌ No DeFi positions to chart');
+                return;
+            }
+
+            let data, labels;
+            
+            if (mode === 'protocol') {
+                // Group by protocol
+                const protocolData = {};
+                allDefiPositions.forEach(position => {
+                    console.log('Processing DeFi position for chart:', {
+                        protocol: position.protocol,
+                        token: position.token,
+                        value_usd: position.value_usd,
+                        amount: position.amount
+                    });
+                    
+                    if (!protocolData[position.protocol]) {
+                        protocolData[position.protocol] = 0;
+                    }
+                    const value = parseFloat(position.value_usd) || 0;
+                    console.log(`  Adding ${value} to ${position.protocol}`);
+                    protocolData[position.protocol] += value;
+                });
+                
+                console.log('Protocol data aggregated:', protocolData);
+                
+                // Sort by value and filter out zero values
+                const sorted = Object.entries(protocolData)
+                    .filter(([, value]) => value > 0)
+                    .sort((a, b) => b[1] - a[1]);
+                
+                console.log('Sorted protocol data:', sorted);
+                
+                if (sorted.length === 0) {
+                    console.log('❌ No DeFi positions with value > 0');
+                    return;
+                }
+                
+                labels = sorted.map(([protocol]) => protocol);
+                data = sorted.map(([, value]) => value);
+                console.log('Chart labels:', labels);
+                console.log('Chart data:', data);
+            } else {
+                // Group by chain
+                const chainData = {};
+                allDefiPositions.forEach(position => {
+                    if (!chainData[position.chain]) {
+                        chainData[position.chain] = 0;
+                    }
+                    const value = parseFloat(position.value_usd) || 0;
+                    chainData[position.chain] += value;
+                });
+                
+                // Filter out zero values
+                const filtered = Object.entries(chainData)
+                    .filter(([, value]) => value > 0);
+                
+                if (filtered.length === 0) {
+                    console.log('No DeFi positions with value > 0 by chain');
+                    return;
+                }
+                
+                labels = filtered.map(([chain]) => chain);
+                data = filtered.map(([, value]) => value);
+            }
+
+            defiChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: chartColors,
+                        borderWidth: 2,
+                        borderColor: getChartBackgroundColor()
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: getChartTextColor(),
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: $${formatNumber(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 800,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        function switchPortfolioChart(mode) {
+            portfolioChartMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('#portfolioChart').forEach(canvas => {
+                const card = canvas.closest('.chart-card');
+                card.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                card.querySelector(`[onclick="switchPortfolioChart('${mode}')"]`).classList.add('active');
+            });
+            
+            createPortfolioChart(mode);
+        }
+
+        function switchDefiChart(mode) {
+            defiChartMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('#defiChart').forEach(canvas => {
+                const card = canvas.closest('.chart-card');
+                card.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                card.querySelector(`[onclick="switchDefiChart('${mode}')"]`).classList.add('active');
+            });
+            
+            createDefiChart(mode);
+        }
+    </script>
+</body>
+</html>

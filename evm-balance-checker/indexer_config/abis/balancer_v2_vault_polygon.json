@@ -1,0 +1,85 @@
+[
+  {
+    "type": "event",
+    "name": "PoolBalanceChanged",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "bytes32",
+        "indexed": true
+      },
+      {
+        "name": "liquidityProvider",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "tokens",
+        "type": "address[]",
+        "indexed": false
+      },
+      {
+        "name": "deltas",
+        "type": "int256[]",
+        "indexed": false
+      },
+      {
+        "name": "protocolFeeAmounts",
+        "type": "uint256[]",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "Swap",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "bytes32",
+        "indexed": true
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "PoolRegistered",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "bytes32",
+        "indexed": true
+      },
+      {
+        "name": "poolAddress",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "specialization",
+        "type": "uint8",
+        "indexed": false
+      }
+    ]
+  }
+]

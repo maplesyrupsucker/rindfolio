@@ -1,0 +1,80 @@
+name: defi_positions_indexer
+description: Auto-generated DeFi positions indexer (Demo)
+project_type: no-code
+networks:
+  ethereum:
+    chain_id: 1
+    rpc: https://eth.llamarpc.com
+    contracts:
+    - name: Aave V3_ethereum
+      address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
+      abi: ./abis/aave-v3_ethereum.json
+      category: lending
+      events: &id001
+      - Supply
+      - Withdraw
+      - Borrow
+      - Repay
+      - LiquidationCall
+    - name: Uniswap V3_ethereum
+      address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+      abi: ./abis/uniswap-v3_ethereum.json
+      category: dex
+      events: &id002
+      - Mint
+      - Burn
+      - Swap
+      - IncreaseLiquidity
+      - DecreaseLiquidity
+    - name: Curve Finance_ethereum
+      address: '0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5'
+      abi: ./abis/curve_ethereum.json
+      category: dex
+      events: &id003
+      - AddLiquidity
+      - RemoveLiquidity
+      - TokenExchange
+  arbitrum:
+    chain_id: 42161
+    rpc: https://arb1.arbitrum.io/rpc
+    contracts:
+    - name: Aave V3_arbitrum
+      address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+      abi: ./abis/aave-v3_arbitrum.json
+      category: lending
+      events: *id001
+    - name: Uniswap V3_arbitrum
+      address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+      abi: ./abis/uniswap-v3_arbitrum.json
+      category: dex
+      events: *id002
+    - name: Curve Finance_arbitrum
+      address: '0x445FE580eF8d70FF569aB36e80c647af338db351'
+      abi: ./abis/curve_arbitrum.json
+      category: dex
+      events: *id003
+  polygon:
+    chain_id: 137
+    rpc: https://polygon-rpc.com
+    contracts:
+    - name: Aave V3_polygon
+      address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+      abi: ./abis/aave-v3_polygon.json
+      category: lending
+      events: *id001
+    - name: Uniswap V3_polygon
+      address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+      abi: ./abis/uniswap-v3_polygon.json
+      category: dex
+      events: *id002
+    - name: Curve Finance_polygon
+      address: '0x094d12e5b541784701FD8d65F11fc0598FBC6332'
+      abi: ./abis/curve_polygon.json
+      category: dex
+      events: *id003
+storage:
+  postgres:
+    enabled: true
+global_contracts:
+- name: ERC20
+  abi: ./abis/erc20.json

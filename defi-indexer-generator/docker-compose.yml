@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for rindexer
+  postgres:
+    image: postgres:15-alpine
+    container_name: defi-indexer-postgres
+    environment:
+      POSTGRES_DB: rindexer
+      POSTGRES_USER: rindexer
+      POSTGRES_PASSWORD: rindexer_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rindexer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defi-indexer
+
+  # Generator - Auto-generates rindexer.yaml on startup
+  generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.generator
+    container_name: defi-indexer-generator
+    environment:
+      # Block explorer API keys (optional, works without)
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY:-YourApiKeyToken}
+      - POLYGONSCAN_API_KEY=${POLYGONSCAN_API_KEY:-YourApiKeyToken}
+      - ARBISCAN_API_KEY=${ARBISCAN_API_KEY:-YourApiKeyToken}
+      - OPTIMISM_ETHERSCAN_API_KEY=${OPTIMISM_ETHERSCAN_API_KEY:-YourApiKeyToken}
+      - BASESCAN_API_KEY=${BASESCAN_API_KEY:-YourApiKeyToken}
+      # RPC URLs (optional, uses public RPCs by default)
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL:-https://eth.llamarpc.com}
+      - POLYGON_RPC_URL=${POLYGON_RPC_URL:-https://polygon-rpc.com}
+      - ARBITRUM_RPC_URL=${ARBITRUM_RPC_URL:-https://arb1.arbitrum.io/rpc}
+      - OPTIMISM_RPC_URL=${OPTIMISM_RPC_URL:-https://mainnet.optimism.io}
+      - BASE_RPC_URL=${BASE_RPC_URL:-https://mainnet.base.org}
+    volumes:
+      - ./rindexer_project:/output
+      - ./.cache:/app/.cache
+    command: >
+      python generate_rindexer_yaml.py
+      --chains ethereum,polygon,arbitrum,optimism,base
+      --output /output
+      --max-protocols 50
+      --parallel 5
+    networks:
+      - defi-indexer
+
+  # Rindexer - Indexes blockchain data
+  rindexer:
+    image: ghcr.io/joshstevens19/rindexer:latest
+    container_name: defi-indexer-rindexer
+    depends_on:
+      postgres:
+        condition: service_healthy
+      generator:
+        condition: service_completed_successfully
+    environment:
+      - DATABASE_URL=postgresql://rindexer:rindexer_password@postgres:5432/rindexer
+    volumes:
+      - ./rindexer_project:/app
+    working_dir: /app
+    command: ["start"]
+    ports:
+      - "3001:3001"  # GraphQL endpoint
+    networks:
+      - defi-indexer
+    restart: unless-stopped
+
+  # GraphQL Playground (optional)
+  graphql-playground:
+    image: graphql/graphql-playground
+    container_name: defi-indexer-playground
+    environment:
+      - ENDPOINT=http://rindexer:3001/graphql
+    ports:
+      - "4000:4000"
+    depends_on:
+      - rindexer
+    networks:
+      - defi-indexer
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  defi-indexer:
+    driver: bridge
+

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: defi_indexer_db
+    environment:
+      POSTGRES_USER: rindexer
+      POSTGRES_PASSWORD: rindexer
+      POSTGRES_DB: defi_indexer
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rindexer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rindexer:
+    image: ghcr.io/joshstevens19/rindexer:latest
+    container_name: defi_indexer
+    platform: linux/amd64
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - ETHEREUM_RPC_URL=https://eth.llamarpc.com
+      - ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
+      - POLYGON_RPC_URL=https://polygon-rpc.com
+      - OPTIMISM_RPC_URL=https://mainnet.optimism.io
+      - AVALANCHE_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+      - BASE_RPC_URL=https://mainnet.base.org
+      - DATABASE_URL=postgresql://rindexer:rindexer@postgres:5432/defi_indexer
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: ["start", "all"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

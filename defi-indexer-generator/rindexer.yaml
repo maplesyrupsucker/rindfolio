@@ -1,0 +1,64 @@
+name: defi_positions_indexer
+description: Auto-generated DeFi positions indexer (DEMO)
+project_type: no-code
+networks:
+  ethereum:
+    chain_id: 1
+    rpc: https://eth.llamarpc.com
+  arbitrum:
+    chain_id: 42161
+    rpc: https://arb1.arbitrum.io/rpc
+contracts:
+- name: aave-v3_ethereum
+  network: ethereum
+  address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
+  abi: ./abis/aave-v3_ethereum.json
+  events: &id001
+  - Supply
+  - Borrow
+  - Withdraw
+  - Repay
+  - LiquidationCall
+  metadata:
+    protocol: Aave V3
+    category: lending
+- name: aave-v3_arbitrum
+  network: arbitrum
+  address: '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+  abi: ./abis/aave-v3_arbitrum.json
+  events: *id001
+  metadata:
+    protocol: Aave V3
+    category: lending
+- name: uniswap-v3_ethereum
+  network: ethereum
+  address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+  abi: ./abis/uniswap-v3_ethereum.json
+  events: &id002
+  - Mint
+  - Burn
+  - Collect
+  - IncreaseLiquidity
+  - DecreaseLiquidity
+  metadata:
+    protocol: Uniswap V3
+    category: dex
+- name: uniswap-v3_arbitrum
+  network: arbitrum
+  address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+  abi: ./abis/uniswap-v3_arbitrum.json
+  events: *id002
+  metadata:
+    protocol: Uniswap V3
+    category: dex
+- name: lido_ethereum
+  network: ethereum
+  address: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+  abi: ./abis/lido_ethereum.json
+  events:
+  - Submitted
+  - Transfer
+  - SharesBurnt
+  metadata:
+    protocol: Lido
+    category: staking

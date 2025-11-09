@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: evm_balance_checker_db
+    environment:
+      POSTGRES_DB: evm_balance_checker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rindexer:
+    image: ghcr.io/joshstevens19/rindexer:latest
+    container_name: evm_balance_checker_indexer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./rindexer.yaml:/app/rindexer.yaml
+      - ./abis:/app/abis
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/evm_balance_checker
+    command: start all --path /app
+    ports:
+      - "3001:3001"
+
+volumes:
+  postgres_data:
+
