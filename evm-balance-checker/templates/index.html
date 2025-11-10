@@ -1549,6 +1549,9 @@
                     <div class="chain-filter" data-chain="BNB Chain">
                         <img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png" alt="BNB"> BNB
                     </div>
+                    <div class="chain-filter" data-chain="Base">
+                        <img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png" alt="BASE"> BASE
+                    </div>
                 </div>
                 <div id="walletBalances"></div>
             </div>
@@ -1577,6 +1580,9 @@
                     </div>
                     <div class="chain-filter" data-chain="BNB Chain">
                         <img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png" alt="BNB"> BNB
+                    </div>
+                    <div class="chain-filter" data-chain="Base">
+                        <img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png" alt="BASE"> BASE
                     </div>
                 </div>
                 <div id="defiPositions"></div>
@@ -1913,7 +1919,8 @@
                 'Arbitrum One': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png',
                 'Polygon': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png',
                 'Avalanche': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png',
-                'BNB Chain': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png'
+                'BNB Chain': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png',
+                'Base': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png'
             };
             
             const iconUrl = chainIcons[chainName];
@@ -2272,6 +2279,9 @@
         }
 
         function displayResults(data, fromCache) {
+            // Clear all existing charts first
+            clearAllCharts();
+            
             const cacheInfo = document.getElementById('cacheInfo');
             
             // Check if data came from server cache or client cache
@@ -2688,8 +2698,37 @@
             return getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim();
         }
 
+        function clearAllCharts() {
+            // Destroy existing chart instances
+            if (portfolioChart) {
+                portfolioChart.destroy();
+                portfolioChart = null;
+            }
+            if (defiChart) {
+                defiChart.destroy();
+                defiChart = null;
+            }
+            
+            // Hide chart sections
+            const portfolioSection = document.querySelector('.chart-card:has(#portfolioChart)');
+            const defiSection = document.querySelector('.chart-card:has(#defiChart)');
+            
+            if (portfolioSection) {
+                portfolioSection.style.display = 'none';
+            }
+            if (defiSection) {
+                defiSection.style.display = 'none';
+            }
+        }
+
         function createPortfolioChart(mode) {
             const ctx = document.getElementById('portfolioChart').getContext('2d');
+            
+            // Show chart section
+            const portfolioSection = document.querySelector('.chart-card:has(#portfolioChart)');
+            if (portfolioSection) {
+                portfolioSection.style.display = 'block';
+            }
             
             if (portfolioChart) {
                 portfolioChart.destroy();
@@ -2783,6 +2822,12 @@
 
         function createDefiChart(mode) {
             const ctx = document.getElementById('defiChart').getContext('2d');
+            
+            // Show chart section
+            const defiSection = document.querySelector('.chart-card:has(#defiChart)');
+            if (defiSection) {
+                defiSection.style.display = 'block';
+            }
             
             if (defiChart) {
                 defiChart.destroy();

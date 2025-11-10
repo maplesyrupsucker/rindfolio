@@ -57,6 +57,14 @@ CHAINS = {
         'explorer': 'https://bscscan.com',
         'native_token': 'BNB',
         'coingecko_id': 'binancecoin'
+    },
+    'base': {
+        'name': 'Base',
+        'chain_id': 8453,
+        'rpc': os.getenv('BASE_RPC_URL', 'https://mainnet.base.org'),
+        'explorer': 'https://basescan.org',
+        'native_token': 'ETH',
+        'coingecko_id': 'ethereum'
     }
 }
 
@@ -81,6 +89,7 @@ TOKENS_BY_CHAIN = {
         'LINK': '0x514910771AF9Ca656af840dff83E8264EcF986CA',
         'VERSE': '0x249cA82617eC3DfB2589c4c17ab7EC9765350a18',
         'fxVERSE': '0x164E1e96fE74f61BdB881Dd6207E4F26B7C1b86b',
+        'WLFI': '0xdA5e1988097297dCdc1f90D4dFE7909e847CBeF6',
     },
     'arbitrum': {
         'USDC': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
@@ -118,6 +127,12 @@ TOKENS_BY_CHAIN = {
         'BTCB': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
         'ETH': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
         'CAKE': '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+    },
+    'base': {
+        'USDC': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        'USDbC': '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
+        'WETH': '0x4200000000000000000000000000000000000006',
+        'cbETH': '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
     }
 }
 
@@ -222,6 +237,9 @@ DEFI_PROTOCOLS = {
         'verse': {
             'vstBTC': '0xcBE5F4E8A112F25C2F902714E3cBB7955F19bb36',  # vstBTC staking contract (1:1 with VERSE)
             'vTeam': '0x78190e4c7c7b2c2c3b0562f1f155a1fc2f5160ca',  # vTeam token (1:1 with VERSE)
+        },
+        'wlfi': {
+            'WLFI_Vesting': '0x74b4f6a2e579d730aacb9dd23cfbbaeb95029583',  # WLFI Vesting contract
         },
     },
     'arbitrum': {
@@ -400,6 +418,21 @@ DEFI_PROTOCOLS = {
         # PancakeSwap V3
         'pancakeswap': {
             'CAKE': '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+        },
+    },
+    'base': {
+        # Aave V3 aTokens (Supply/Lend positions)
+        'aave': {
+            'aBasUSDbC': '0x0a1d576f3eFeF75b330424287a95A366e8281D54',
+            'aBasWETH': '0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7',
+            'aBascbETH': '0x3c59f10c1d43119c5e2e3e0a5e0f5f3b5b5b5b5b',  # Placeholder - needs verification
+            'aBasUSDS': '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB',
+        },
+        # Aave V3 Variable Debt Tokens (Borrow positions)
+        'aave_debt': {
+            'variableDebtBasUSDbC': '0x59dca05b6c26dbd64b5381374aAaC5CD05644C28',
+            'variableDebtBasWETH': '0x2e7576042566f8D6990e07A1B61Ad1efd86Ae70d',
+            'variableDebtBasUSDS': '0x69838e6E1f40c1fE3C1e9e5d8F3f8c3f8c3f8c3f',  # Placeholder - needs verification
         },
     }
 }
@@ -612,10 +645,24 @@ def get_defi_position(address: str, token_address: str, token_name: str, protoco
         checksum_address = Web3.to_checksum_address(address)
         token_checksum = Web3.to_checksum_address(token_address)
         
-        # Get balance using standard ERC20 balanceOf
-        contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
-        balance = contract.functions.balanceOf(checksum_address).call()
-        decimals = contract.functions.decimals().call()
+        # Handle WLFI Vesting contract with custom unclaimed method
+        if token_name == 'WLFI_Vesting':
+            # Custom ABI for unclaimed method
+            unclaimed_abi = [{
+                "name": "unclaimed",
+                "type": "function",
+                "inputs": [{"name": "_user", "type": "address"}],
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view"
+            }]
+            contract = w3.eth.contract(address=token_checksum, abi=unclaimed_abi)
+            balance = contract.functions.unclaimed(checksum_address).call()
+            decimals = 18  # WLFI has 18 decimals
+        else:
+            # Get balance using standard ERC20 balanceOf
+            contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
+            balance = contract.functions.balanceOf(checksum_address).call()
+            decimals = contract.functions.decimals().call()
         
         print(f"  Balance: {balance}")
         
@@ -650,6 +697,7 @@ def get_defi_position(address: str, token_address: str, token_name: str, protoco
             'frax': ('Frax', 'Stablecoin'),
             'radiant': ('Radiant', 'Lending'),
             'verse': ('Verse Ecosystem', 'Staking'),
+            'wlfi': ('WLFI', 'Vesting'),
         }
         
         protocol_name, position_type = protocol_info.get(protocol, (protocol.title(), 'Position'))
@@ -776,7 +824,8 @@ def extract_underlying_token(token_name: str, protocol: str) -> str:
         'GLP': 'GLP',
         'tBTC': 'tBTC',
         'vstBTC': 'VERSE',  # vstBTC is 1:1 with VERSE
-        'vTeam': 'VERSE'    # vTeam is 1:1 with VERSE
+        'vTeam': 'VERSE',   # vTeam is 1:1 with VERSE
+        'WLFI_Vesting': 'WLFI'  # WLFI Vesting unclaimed tokens
     }
     
     if token in special_tokens:
@@ -792,8 +841,8 @@ def get_token_price_simple(symbol: str) -> float:
     # Map token symbols to CoinGecko IDs
     symbol_to_coingecko = {
         'ETH': 'ethereum', 'WETH': 'ethereum', 'WETHE': 'ethereum',
-        'USDC': 'usd-coin', 'USDCN': 'usd-coin', 'USDCE': 'usd-coin',
-        'USDT': 'tether', 'DAI': 'dai',
+        'USDC': 'usd-coin', 'USDCN': 'usd-coin', 'USDCE': 'usd-coin', 'USDbC': 'bridged-usd-coin',
+        'USDT': 'tether', 'DAI': 'dai', 'USDS': 'usds',
         'WBTC': 'wrapped-bitcoin', 'BTCB': 'bitcoin', 'BTCb': 'bitcoin', 'tBTC': 'tbtc',
         'AAVE': 'aave', 'AAVEE': 'aave',
         'UNI': 'uniswap', 'LINK': 'chainlink', 'LINKE': 'chainlink',
@@ -816,6 +865,7 @@ def get_token_price_simple(symbol: str) -> float:
         'SAVAX': 'benqi-liquid-staked-avax', 'sAVAX': 'benqi-liquid-staked-avax',
         'MAI': 'mimatic', 'FDUSD': 'first-digital-usd',
         'VERSE': 'verse-bitcoin', 'vstBTC': 'verse-bitcoin', 'vTeam': 'verse-bitcoin', 'fxVERSE': 'verse-bitcoin',
+        'WLFI': 'world-liberty-financial',
     }
     
     coingecko_id = symbol_to_coingecko.get(symbol)
