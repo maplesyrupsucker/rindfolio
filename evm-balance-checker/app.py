@@ -79,6 +79,8 @@ TOKENS_BY_CHAIN = {
         'AAVE': '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9',
         'UNI': '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
         'LINK': '0x514910771AF9Ca656af840dff83E8264EcF986CA',
+        'VERSE': '0x249cA82617eC3DfB2589c4c17ab7EC9765350a18',
+        'fxVERSE': '0x164E1e96fE74f61BdB881Dd6207E4F26B7C1b86b',
     },
     'arbitrum': {
         'USDC': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
@@ -97,6 +99,7 @@ TOKENS_BY_CHAIN = {
         'WBTC': '0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6',
         'WMATIC': '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
         'AAVE': '0xD6DF932A45C0f255f85145f286eA0b292B21C90B',
+        'VERSE': '0xc708D6F2153933DAA50B2D0758955Be0A93A8FEc',
     },
     'avalanche': {
         'USDC': '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
@@ -215,10 +218,9 @@ DEFI_PROTOCOLS = {
             'FXS': '0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0',
             'sfrxETH': '0xac3E018457B222d93114458476f3E3416Abbe38F',
         },
-        # Verse Staking (tBTC earn pool)
+        # Verse Ecosystem (vstBTC staking + vTeam)
         'verse': {
-            'stVERSE': '0xcBE5F4E8A112F25C2F902714E3cBB7955F19bb36',  # Verse staking contract
-            'VERSE': '0x249cA82617eC3DfB2589c4c17ab7EC9765350a18',  # Verse token
+            'vstBTC': '0xcBE5F4E8A112F25C2F902714E3cBB7955F19bb36',  # vstBTC staking contract (1:1 with VERSE)
             'vTeam': '0x78190e4c7c7b2c2c3b0562f1f155a1fc2f5160ca',  # vTeam token (1:1 with VERSE)
         },
     },
@@ -326,10 +328,9 @@ DEFI_PROTOCOLS = {
         'curve': {
             'am3CRV': '0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171',  # aave pool
         },
-        # Verse Staking (tBTC earn pool)
+        # Verse Ecosystem (vstBTC staking only)
         'verse': {
-            'stVERSE': '0x66b0FBbEb420B63155d61eC5922293148BB796ec',  # Verse staking contract on Polygon
-            'VERSE': '0xc708D6F2153933DAa50B2D0758955Be0A93A8FEf',  # Verse token on Polygon
+            'vstBTC': '0x66b0FBbEb420B63155d61eC5922293148BB796ec',  # vstBTC staking contract (1:1 with VERSE)
         },
     },
     'avalanche': {
@@ -414,6 +415,40 @@ ERC20_ABI = json.loads('''[
 # Price cache with timestamp
 price_cache = {}
 PRICE_CACHE_DURATION = 7200  # 2 hours
+
+# Server-side portfolio cache (in-memory)
+# Structure: { "address": (data, timestamp) }
+portfolio_cache = {}
+PORTFOLIO_CACHE_DURATION = 86400  # 24 hours server-side cache
+
+def get_cached_portfolio(address: str):
+    """Get cached portfolio data if available"""
+    now = datetime.now().timestamp()
+    address_lower = address.lower()
+    
+    if address_lower in portfolio_cache:
+        data, timestamp = portfolio_cache[address_lower]
+        if now - timestamp < PORTFOLIO_CACHE_DURATION:
+            age_seconds = int(now - timestamp)
+            print(f"📦 Serving cached portfolio for {address[:8]}... (age: {age_seconds}s)")
+            return data
+    return None
+
+def set_cached_portfolio(address: str, data: dict):
+    """Cache portfolio data"""
+    address_lower = address.lower()
+    portfolio_cache[address_lower] = (data, datetime.now().timestamp())
+    hours = PORTFOLIO_CACHE_DURATION / 3600
+    print(f"💾 Cached portfolio for {address[:8]}... (expires in {hours:.0f}h)")
+
+def prune_portfolio_cache():
+    """Remove expired entries from portfolio cache"""
+    now = datetime.now().timestamp()
+    expired = [addr for addr, (_, ts) in portfolio_cache.items() if now - ts > PORTFOLIO_CACHE_DURATION]
+    for addr in expired:
+        del portfolio_cache[addr]
+    if expired:
+        print(f"🧹 Pruned {len(expired)} expired portfolio cache entries")
 
 def get_token_price_by_coingecko(coingecko_id: str) -> float:
     """Get token price from CoinGecko with caching"""
@@ -577,29 +612,10 @@ def get_defi_position(address: str, token_address: str, token_name: str, protoco
         checksum_address = Web3.to_checksum_address(address)
         token_checksum = Web3.to_checksum_address(token_address)
         
-        # Special handling for Verse getTotalVerse contract
-        if token_name == 'VERSE' and protocol == 'verse' and chain == 'ethereum':
-            try:
-                get_total_verse_abi = [{
-                    "name": "getTotalVerse",
-                    "type": "function",
-                    "inputs": [{"name": "account", "type": "address", "internalType": "address"}],
-                    "outputs": [{"name": "totalVerse", "type": "uint256", "internalType": "uint256"}],
-                    "stateMutability": "view"
-                }]
-                verse_contract = w3.eth.contract(address=Web3.to_checksum_address('0x3b089972c36578cf6eab8e7f2dad3b63c27bee07'), abi=get_total_verse_abi)
-                balance = verse_contract.functions.getTotalVerse(checksum_address).call()
-                decimals = 18
-                print(f"  getTotalVerse Balance: {balance}")
-            except Exception as e:
-                print(f"  getTotalVerse failed, falling back to balanceOf: {e}")
-                contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
-                balance = contract.functions.balanceOf(checksum_address).call()
-                decimals = contract.functions.decimals().call()
-        else:
-            contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
-            balance = contract.functions.balanceOf(checksum_address).call()
-            decimals = contract.functions.decimals().call()
+        # Get balance using standard ERC20 balanceOf
+        contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
+        balance = contract.functions.balanceOf(checksum_address).call()
+        decimals = contract.functions.decimals().call()
         
         print(f"  Balance: {balance}")
         
@@ -633,7 +649,7 @@ def get_defi_position(address: str, token_address: str, token_name: str, protoco
             'yearn': ('Yearn', 'Vault'),
             'frax': ('Frax', 'Stablecoin'),
             'radiant': ('Radiant', 'Lending'),
-            'verse': ('Verse', 'Staking'),
+            'verse': ('Verse Ecosystem', 'Staking'),
         }
         
         protocol_name, position_type = protocol_info.get(protocol, (protocol.title(), 'Position'))
@@ -759,8 +775,8 @@ def extract_underlying_token(token_name: str, protocol: str) -> str:
         'rETH': 'rETH',
         'GLP': 'GLP',
         'tBTC': 'tBTC',
-        'stVERSE': 'VERSE',
-        'vTeam': 'VERSE'
+        'vstBTC': 'VERSE',  # vstBTC is 1:1 with VERSE
+        'vTeam': 'VERSE'    # vTeam is 1:1 with VERSE
     }
     
     if token in special_tokens:
@@ -799,7 +815,7 @@ def get_token_price_simple(symbol: str) -> float:
         'STMATIC': 'lido-staked-matic', 'MATICX': 'stader-maticx',
         'SAVAX': 'benqi-liquid-staked-avax', 'sAVAX': 'benqi-liquid-staked-avax',
         'MAI': 'mimatic', 'FDUSD': 'first-digital-usd',
-        'VERSE': 'verse-bitcoin', 'stVERSE': 'verse-bitcoin', 'vTeam': 'verse-bitcoin',
+        'VERSE': 'verse-bitcoin', 'vstBTC': 'verse-bitcoin', 'vTeam': 'verse-bitcoin', 'fxVERSE': 'verse-bitcoin',
     }
     
     coingecko_id = symbol_to_coingecko.get(symbol)
@@ -904,6 +920,16 @@ def check_address(address):
         if not Web3.is_address(address):
             return jsonify({'error': 'Invalid Ethereum address'}), 400
         
+        # Check server-side cache first
+        cached_data = get_cached_portfolio(address)
+        if cached_data:
+            # Add cache indicator to response
+            cached_data['_server_cached'] = True
+            return jsonify(cached_data)
+        
+        # Prune old cache entries periodically
+        prune_portfolio_cache()
+        
         # Get all data across chains
         wallet_balances, defi_positions = get_all_balances_multichain(address)
         
@@ -916,7 +942,7 @@ def check_address(address):
         wallet_balances.sort(key=lambda x: x.get('balance_usd', 0), reverse=True)
         defi_positions.sort(key=lambda x: x.get('value_usd', 0), reverse=True)
         
-        return jsonify({
+        response_data = {
             'address': address,
             'total_value_usd': total_value_usd,
             'wallet_value_usd': total_wallet_value,
@@ -924,8 +950,14 @@ def check_address(address):
             'wallet_balances': wallet_balances,
             'defi_positions': defi_positions,
             'chains_checked': list(CHAINS.keys()),
-            'timestamp': datetime.now().isoformat()
-        })
+            'timestamp': datetime.now().isoformat(),
+            '_server_cached': False
+        }
+        
+        # Cache the response
+        set_cached_portfolio(address, response_data)
+        
+        return jsonify(response_data)
     except Exception as e:
         print(f"Error in check_address: {e}")
         return jsonify({'error': str(e)}), 500

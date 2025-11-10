@@ -437,6 +437,10 @@
             color: #28a745;
         }
 
+        .cache-info.stale {
+            color: #ffc107;
+        }
+
         .total-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -1722,13 +1726,46 @@
         const CACHE_KEY = 'portfolio_cache';
         const SAVED_ADDRESSES_KEY = 'saved_addresses';
         const ICON_CACHE_KEY = 'token_icon_cache';
-        const CACHE_DURATION = 0; // DISABLED FOR TESTING
-        const ICON_CACHE_DURATION = 0; // DISABLED FOR TESTING
+        const LAST_REFRESH_KEY = 'last_refresh_times';
         
-        // Clear all caches on load for testing
-        localStorage.removeItem(CACHE_KEY);
-        localStorage.removeItem(ICON_CACHE_KEY);
-        console.log('🧹 All caches cleared for testing');
+        // Cache durations (in milliseconds)
+        const CACHE_DURATION = 24 * 60 * 60 * 1000;           // 24 hours for portfolio data
+        const LOCAL_STORAGE_DURATION = 30 * 24 * 60 * 60 * 1000;  // 30 days for local storage
+        const ICON_CACHE_DURATION = 30 * 24 * 60 * 60 * 1000;     // 30 days for token icons
+        const REFRESH_COOLDOWN = 5 * 60 * 1000;               // 5 minutes between refreshes
+        
+        // Track last refresh times per address
+        function getLastRefreshTime(address) {
+            try {
+                const refreshTimes = JSON.parse(localStorage.getItem(LAST_REFRESH_KEY) || '{}');
+                return refreshTimes[address.toLowerCase()] || 0;
+            } catch (e) {
+                return 0;
+            }
+        }
+        
+        function setLastRefreshTime(address) {
+            try {
+                const refreshTimes = JSON.parse(localStorage.getItem(LAST_REFRESH_KEY) || '{}');
+                refreshTimes[address.toLowerCase()] = Date.now();
+                localStorage.setItem(LAST_REFRESH_KEY, JSON.stringify(refreshTimes));
+            } catch (e) {
+                console.error('Error setting refresh time:', e);
+            }
+        }
+        
+        function canRefresh(address) {
+            const lastRefresh = getLastRefreshTime(address);
+            const timeSinceRefresh = Date.now() - lastRefresh;
+            return timeSinceRefresh >= REFRESH_COOLDOWN;
+        }
+        
+        function getRefreshCooldownRemaining(address) {
+            const lastRefresh = getLastRefreshTime(address);
+            const timeSinceRefresh = Date.now() - lastRefresh;
+            const remaining = REFRESH_COOLDOWN - timeSinceRefresh;
+            return Math.max(0, Math.ceil(remaining / 1000)); // seconds
+        }
 
         let allWalletBalances = [];
         let allDefiPositions = [];
@@ -1801,6 +1838,17 @@
             }).format(num);
         }
 
+        function normalizeTokenName(symbol) {
+            // Normalize token display names
+            const nameMap = {
+                'fxVERSE': 'VERSE',
+                'vstBTC': 'vstBTC',
+                'vTeam': 'vTeam',
+                'stVERSE': 'stVERSE'
+            };
+            return nameMap[symbol] || symbol;
+        }
+
         function getTokenIcon(symbol) {
             // Multiple fallback sources for token icons
             const tokenIconMap = {
@@ -1820,8 +1868,10 @@
                 'AVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png',
                 'WAVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png',
                 'VERSE': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png',
+                'fxVERSE': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png',
                 'stVERSE': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png',
-                'vTeam': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png'
+                'vTeam': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png',
+                'vstBTC': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png'
             };
             
             const coingeckoId = tokenToCoinGecko[symbol];
@@ -1909,13 +1959,34 @@
             try {
                 const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
                 const cached = cache[address.toLowerCase()];
-                if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-                    return cached.data;
+                
+                if (cached) {
+                    const age = Date.now() - cached.timestamp;
+                    
+                    // Return data if within 30 days (local storage duration)
+                    // Even if older than 24h, we show it with "stale" indicator
+                    if (age < LOCAL_STORAGE_DURATION) {
+                        return {
+                            ...cached.data,
+                            _cacheAge: age,
+                            _isStale: age > CACHE_DURATION
+                        };
+                    }
                 }
             } catch (e) {
                 console.error('Error reading cache:', e);
             }
             return null;
+        }
+
+        function getCachedTimestamp(address) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                const cached = cache[address.toLowerCase()];
+                return cached ? cached.timestamp : null;
+            } catch (e) {
+                return null;
+            }
         }
 
         function setCachedData(address, data) {
@@ -1981,27 +2052,42 @@
         }
 
         function forceRefresh() {
-            if (currentAddress) {
-                const refreshIcon = document.getElementById('refreshIcon');
-                refreshIcon.classList.add('spinning');
+            if (!currentAddress) return;
+            
+            // Check if refresh is allowed (5 minute cooldown)
+            if (!canRefresh(currentAddress)) {
+                const remaining = getRefreshCooldownRemaining(currentAddress);
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                const timeText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
                 
-                // Clear only the current address cache (not icon cache)
-                try {
-                    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-                    delete cache[currentAddress.toLowerCase()];
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-                    console.log(`Cache cleared for ${currentAddress}`);
-                } catch (e) {
-                    console.error('Error clearing cache:', e);
-                }
-                
-                // Fetch fresh data
-                checkAddress(true).finally(() => {
-                    setTimeout(() => {
-                        refreshIcon.classList.remove('spinning');
-                    }, 500);
-                });
+                showToast(`⏳ Please wait ${timeText} before refreshing again`);
+                console.log(`Refresh cooldown: ${remaining}s remaining`);
+                return;
             }
+            
+            const refreshIcon = document.getElementById('refreshIcon');
+            refreshIcon.classList.add('spinning');
+            
+            // Clear only the current address cache (not icon cache)
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                delete cache[currentAddress.toLowerCase()];
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+                console.log(`Cache cleared for ${currentAddress}`);
+            } catch (e) {
+                console.error('Error clearing cache:', e);
+            }
+            
+            // Set refresh time
+            setLastRefreshTime(currentAddress);
+            
+            // Fetch fresh data
+            checkAddress(true).finally(() => {
+                setTimeout(() => {
+                    refreshIcon.classList.remove('spinning');
+                }, 500);
+            });
         }
 
         // Production-ready cache management
@@ -2021,25 +2107,25 @@
             // Remove expired entries from caches
             const now = Date.now();
             
-            // Prune portfolio cache
+            // Prune portfolio cache (30 days)
             try {
                 const portfolioCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
                 let pruned = 0;
                 Object.keys(portfolioCache).forEach(key => {
-                    if (now - portfolioCache[key].timestamp > CACHE_DURATION) {
+                    if (now - portfolioCache[key].timestamp > LOCAL_STORAGE_DURATION) {
                         delete portfolioCache[key];
                         pruned++;
                     }
                 });
                 if (pruned > 0) {
                     localStorage.setItem(CACHE_KEY, JSON.stringify(portfolioCache));
-                    console.log(`Pruned ${pruned} expired portfolio cache entries`);
+                    console.log(`🧹 Pruned ${pruned} expired portfolio cache entries (>30 days)`);
                 }
             } catch (e) {
                 console.error('Error pruning portfolio cache:', e);
             }
             
-            // Prune icon cache
+            // Prune icon cache (30 days)
             try {
                 const iconCache = JSON.parse(localStorage.getItem(ICON_CACHE_KEY) || '{}');
                 let pruned = 0;
@@ -2051,10 +2137,28 @@
                 });
                 if (pruned > 0) {
                     localStorage.setItem(ICON_CACHE_KEY, JSON.stringify(iconCache));
-                    console.log(`Pruned ${pruned} expired icon cache entries`);
+                    console.log(`🧹 Pruned ${pruned} expired icon cache entries (>30 days)`);
                 }
             } catch (e) {
                 console.error('Error pruning icon cache:', e);
+            }
+            
+            // Prune old refresh times (30 days)
+            try {
+                const refreshTimes = JSON.parse(localStorage.getItem(LAST_REFRESH_KEY) || '{}');
+                let pruned = 0;
+                Object.keys(refreshTimes).forEach(key => {
+                    if (now - refreshTimes[key] > LOCAL_STORAGE_DURATION) {
+                        delete refreshTimes[key];
+                        pruned++;
+                    }
+                });
+                if (pruned > 0) {
+                    localStorage.setItem(LAST_REFRESH_KEY, JSON.stringify(refreshTimes));
+                    console.log(`🧹 Pruned ${pruned} old refresh time entries (>30 days)`);
+                }
+            } catch (e) {
+                console.error('Error pruning refresh times:', e);
             }
         }
 
@@ -2169,13 +2273,69 @@
 
         function displayResults(data, fromCache) {
             const cacheInfo = document.getElementById('cacheInfo');
-            if (fromCache) {
-                const age = Math.floor((Date.now() - getCachedTimestamp(currentAddress)) / 1000 / 60);
-                cacheInfo.innerHTML = `📦 Cached (${age}m ago)`;
+            
+            // Check if data came from server cache or client cache
+            const isServerCached = data._server_cached === true;
+            const isClientCached = fromCache && !isServerCached;
+            
+            if (isServerCached || isClientCached) {
+                // Get timestamp from server response or client cache
+                let timestamp;
+                if (isServerCached && data.timestamp) {
+                    // Server cached data - use server's timestamp
+                    timestamp = new Date(data.timestamp).getTime();
+                } else {
+                    // Client cached data - use client's cached timestamp
+                    timestamp = getCachedTimestamp(currentAddress);
+                }
+                
+                const age = Date.now() - timestamp;
+                const ageSeconds = Math.floor(age / 1000);
+                const ageMinutes = Math.floor(ageSeconds / 60);
+                const ageHours = Math.floor(ageMinutes / 60);
+                const ageDays = Math.floor(ageHours / 24);
+                
+                // Format age text
+                let ageText;
+                if (ageMinutes < 1) {
+                    ageText = 'just now';
+                } else if (ageHours < 1) {
+                    ageText = `${ageMinutes}m ago`;
+                } else if (ageDays < 1) {
+                    ageText = `${ageHours}h ago`;
+                } else {
+                    ageText = `${ageDays}d ago`;
+                }
+                
+                // Determine freshness
+                const isStale = age > CACHE_DURATION;
+                const canRefreshNow = canRefresh(currentAddress);
+                
+                let hint = '';
+                if (isStale) {
+                    if (canRefreshNow) {
+                        hint = ' • Click refresh for latest';
+                    } else {
+                        const cooldownSecs = getRefreshCooldownRemaining(currentAddress);
+                        hint = ` • Refresh in ${cooldownSecs}s`;
+                    }
+                } else {
+                    const remainingHours = Math.floor((CACHE_DURATION - age) / 1000 / 60 / 60);
+                    if (remainingHours > 0) {
+                        hint = ` • Fresh for ${remainingHours}h`;
+                    }
+                }
+                
+                const emoji = isStale ? '⚠️' : '📦';
+                const cacheSource = isServerCached ? 'Server cached' : 'Cached';
+                cacheInfo.innerHTML = `${emoji} ${cacheSource} ${ageText}${hint}`;
                 cacheInfo.classList.add('cached');
+                if (isStale) cacheInfo.classList.add('stale');
+                cacheInfo.title = `Last updated: ${new Date(timestamp).toLocaleString()}`;
             } else {
                 cacheInfo.innerHTML = `✨ Live data`;
-                cacheInfo.classList.remove('cached');
+                cacheInfo.classList.remove('cached', 'stale');
+                cacheInfo.title = 'Freshly fetched from blockchain';
             }
 
             document.getElementById('totalValue').textContent = `$${formatNumber(data.total_value_usd)}`;
@@ -2221,26 +2381,28 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(balance => `
+            container.innerHTML = filtered.map(balance => {
+                const displayName = normalizeTokenName(balance.symbol);
+                return `
                 <div class="wide-card">
                     <div class="token-icon-wrapper">
                         <div class="token-icon">
                             ${getTokenIcon(balance.symbol)}
                         </div>
                         <div class="token-info">
-                            <div class="token-symbol">${balance.symbol}</div>
+                            <div class="token-symbol">${displayName}</div>
                             <div class="token-chain">${getChainIcon(balance.chain)}</div>
                         </div>
                     </div>
                     <div class="token-amount">
                         <div class="amount-value mono">${formatTokenAmount(balance.balance)}</div>
-                        <div class="amount-label">${balance.symbol}</div>
+                        <div class="amount-label">${displayName}</div>
                     </div>
                     <div class="usd-value">
                         <div class="usd-amount mono">$${formatNumber(balance.balance_usd)}</div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function displayDefiPositions() {
@@ -2280,12 +2442,12 @@
                         console.log('  -> Adding to supply');
                         aavePositions[key].supply.push(position);
                     }
-                } else if (position.protocol === 'Verse') {
+                } else if (position.protocol === 'Verse Ecosystem') {
                     const key = position.chain;
                     if (!versePositions[key]) {
                         versePositions[key] = [];
                     }
-                    console.log('  -> Adding to Verse positions');
+                    console.log('  -> Adding to Verse Ecosystem positions');
                     versePositions[key].push(position);
                 } else {
                     console.log('  -> Adding to other positions');
@@ -2413,8 +2575,8 @@
                         </div>
                         <div class="token-info">
                             <div class="token-symbol">
-                                Verse Staking
-                                <span class="protocol-badge" style="background: rgba(0, 212, 170, 0.2); color: #00D4AA;">Staking</span>
+                                Verse Ecosystem
+                                <span class="protocol-badge" style="background: rgba(0, 212, 170, 0.2); color: #00D4AA;">Ecosystem</span>
                             </div>
                             <div class="position-type">${getChainIcon(chain)}</div>
                         </div>
@@ -2433,6 +2595,7 @@
                 // Show individual Verse positions
                 positions.forEach(position => {
                     const valueUsd = parseFloat(position.value_usd) || 0;
+                    const badgeText = position.token === 'vTeam' ? 'Team Staking' : 'Staking';
                     html += `
                     <div class="wide-card defi-card aave-detail" style="border-left-color: #00D4AA;">
                         <div class="token-icon-wrapper">
@@ -2442,7 +2605,7 @@
                             <div class="token-info">
                                 <div class="token-symbol">
                                     ${position.token}
-                                    <span class="protocol-badge supply-badge" style="background: rgba(0, 212, 170, 0.15); color: #00D4AA;">Staked</span>
+                                    <span class="protocol-badge supply-badge" style="background: rgba(0, 212, 170, 0.15); color: #00D4AA;">${badgeText}</span>
                                 </div>
                                 <div class="position-type">${getChainIcon(position.chain)}</div>
                             </div>
