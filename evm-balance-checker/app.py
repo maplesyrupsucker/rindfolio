@@ -431,10 +431,16 @@ def get_token_price_by_coingecko(coingecko_id: str) -> float:
             timeout=5
         )
         if response.status_code == 200:
-            price = response.json().get(coingecko_id, {}).get('usd', 0)
-            if price:
-                price_cache[coingecko_id] = (price, now)
-                return price
+            data = response.json()
+            # Check for rate limit or error response
+            if 'status' in data and 'error_code' in data['status']:
+                print(f"CoinGecko API error for {coingecko_id}: {data['status'].get('error_message', 'Unknown error')}")
+            else:
+                price = data.get(coingecko_id, {}).get('usd', 0)
+                if price and price > 0:
+                    price_cache[coingecko_id] = (price, now)
+                    print(f"✅ CoinGecko price for {coingecko_id}: ${price}")
+                    return price
     except Exception as e:
         print(f"CoinGecko API error for {coingecko_id}: {e}")
     
@@ -442,9 +448,13 @@ def get_token_price_by_coingecko(coingecko_id: str) -> float:
     fallback = {
         'ethereum': 2000, 'matic-network': 0.8, 'avalanche-2': 30,
         'binancecoin': 300, 'usd-coin': 1, 'tether': 1, 'dai': 1,
-        'tbtc': 102000, 'verse': 0.00006
+        'tbtc': 102000, 'verse-bitcoin': 0.00005836
     }
     price = fallback.get(coingecko_id, 0)
+    if price > 0:
+        print(f"⚠️  Using fallback price for {coingecko_id}: ${price}")
+    else:
+        print(f"❌ No price available for {coingecko_id}")
     price_cache[coingecko_id] = (price, now)
     return price
 
@@ -789,7 +799,7 @@ def get_token_price_simple(symbol: str) -> float:
         'STMATIC': 'lido-staked-matic', 'MATICX': 'stader-maticx',
         'SAVAX': 'benqi-liquid-staked-avax', 'sAVAX': 'benqi-liquid-staked-avax',
         'MAI': 'mimatic', 'FDUSD': 'first-digital-usd',
-        'VERSE': 'verse', 'stVERSE': 'verse', 'vTeam': 'verse',
+        'VERSE': 'verse-bitcoin', 'stVERSE': 'verse-bitcoin', 'vTeam': 'verse-bitcoin',
     }
     
     coingecko_id = symbol_to_coingecko.get(symbol)
