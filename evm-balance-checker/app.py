@@ -218,6 +218,8 @@ DEFI_PROTOCOLS = {
         # Verse Staking (tBTC earn pool)
         'verse': {
             'stVERSE': '0xcBE5F4E8A112F25C2F902714E3cBB7955F19bb36',  # Verse staking contract
+            'VERSE': '0x249cA82617eC3DfB2589c4c17ab7EC9765350a18',  # Verse token
+            'vTeam': '0x78190e4c7c7b2c2c3b0562f1f155a1fc2f5160ca',  # vTeam token (1:1 with VERSE)
         },
     },
     'arbitrum': {
@@ -327,6 +329,7 @@ DEFI_PROTOCOLS = {
         # Verse Staking (tBTC earn pool)
         'verse': {
             'stVERSE': '0x66b0FBbEb420B63155d61eC5922293148BB796ec',  # Verse staking contract on Polygon
+            'VERSE': '0xc708D6F2153933DAa50B2D0758955Be0A93A8FEf',  # Verse token on Polygon
         },
     },
     'avalanche': {
@@ -564,8 +567,29 @@ def get_defi_position(address: str, token_address: str, token_name: str, protoco
         checksum_address = Web3.to_checksum_address(address)
         token_checksum = Web3.to_checksum_address(token_address)
         
-        contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
-        balance = contract.functions.balanceOf(checksum_address).call()
+        # Special handling for Verse getTotalVerse contract
+        if token_name == 'VERSE' and protocol == 'verse' and chain == 'ethereum':
+            try:
+                get_total_verse_abi = [{
+                    "name": "getTotalVerse",
+                    "type": "function",
+                    "inputs": [{"name": "account", "type": "address", "internalType": "address"}],
+                    "outputs": [{"name": "totalVerse", "type": "uint256", "internalType": "uint256"}],
+                    "stateMutability": "view"
+                }]
+                verse_contract = w3.eth.contract(address=Web3.to_checksum_address('0x3b089972c36578cf6eab8e7f2dad3b63c27bee07'), abi=get_total_verse_abi)
+                balance = verse_contract.functions.getTotalVerse(checksum_address).call()
+                decimals = 18
+                print(f"  getTotalVerse Balance: {balance}")
+            except Exception as e:
+                print(f"  getTotalVerse failed, falling back to balanceOf: {e}")
+                contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
+                balance = contract.functions.balanceOf(checksum_address).call()
+                decimals = contract.functions.decimals().call()
+        else:
+            contract = w3.eth.contract(address=token_checksum, abi=ERC20_ABI)
+            balance = contract.functions.balanceOf(checksum_address).call()
+            decimals = contract.functions.decimals().call()
         
         print(f"  Balance: {balance}")
         
@@ -575,7 +599,6 @@ def get_defi_position(address: str, token_address: str, token_name: str, protoco
         if balance == 0:
             return None
         
-        decimals = contract.functions.decimals().call()
         balance_formatted = balance / (10 ** decimals)
         
         # Check if this is a debt token (borrow position)
@@ -726,7 +749,8 @@ def extract_underlying_token(token_name: str, protocol: str) -> str:
         'rETH': 'rETH',
         'GLP': 'GLP',
         'tBTC': 'tBTC',
-        'stVERSE': 'VERSE'
+        'stVERSE': 'VERSE',
+        'vTeam': 'VERSE'
     }
     
     if token in special_tokens:
@@ -765,7 +789,7 @@ def get_token_price_simple(symbol: str) -> float:
         'STMATIC': 'lido-staked-matic', 'MATICX': 'stader-maticx',
         'SAVAX': 'benqi-liquid-staked-avax', 'sAVAX': 'benqi-liquid-staked-avax',
         'MAI': 'mimatic', 'FDUSD': 'first-digital-usd',
-        'VERSE': 'verse', 'stVERSE': 'verse',
+        'VERSE': 'verse', 'stVERSE': 'verse', 'vTeam': 'verse',
     }
     
     coingecko_id = symbol_to_coingecko.get(symbol)
@@ -831,6 +855,11 @@ def get_all_balances_multichain(address: str) -> tuple:
 def index():
     """Main page"""
     return render_template('index.html')
+
+@app.route('/address/<address>')
+def address_route(address):
+    """Direct link to address portfolio"""
+    return render_template('index.html', prefill_address=address)
 
 @app.route('/api/resolve-ens/<name>')
 def resolve_ens(name):

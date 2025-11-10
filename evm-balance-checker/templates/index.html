@@ -901,6 +901,54 @@
             }
         }
 
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+
+        .scroll-to-top:active {
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .scroll-to-top {
+                bottom: 20px;
+                right: 20px;
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -936,6 +984,65 @@
                 margin-top: 30px;
                 font-size: 0.85em;
             }
+        }
+
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+
+        @media (max-width: 768px) {
+            .scroll-to-top {
+                bottom: 20px;
+                right: 20px;
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+        }
+
+        /* Clickable Summary Cards */
+        .clickable-summary {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-summary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px var(--shadow-hover);
+        }
+
+        .clickable-summary:active {
+            transform: translateY(0);
         }
 
         .error {
@@ -1359,11 +1466,11 @@
                         <div class="summary-label">Total Value</div>
                         <div class="summary-value mono" id="totalValue">$0</div>
                     </div>
-                    <div class="summary-card">
+                    <div class="summary-card clickable-summary" onclick="scrollToWallet()">
                         <div class="summary-label">Wallet Tokens</div>
                         <div class="summary-value mono" id="walletValue">$0</div>
                     </div>
-                    <div class="summary-card">
+                    <div class="summary-card clickable-summary" onclick="scrollToDefi()">
                         <div class="summary-label">DeFi Positions</div>
                         <div class="summary-value mono" id="defiValue">$0</div>
                     </div>
@@ -1413,9 +1520,9 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" id="walletSection">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2>💎 Wallet Tokens</h2>
+                    <h2 style="cursor: pointer;" onclick="scrollToSection('walletSection')">💎 Wallet Tokens</h2>
                     <div id="walletLoadingStatus" class="chain-loading" style="display: none;">
                         <div class="chain-loading-spinner"></div>
                         <span id="walletLoadingText">Loading...</span>
@@ -1442,9 +1549,9 @@
                 <div id="walletBalances"></div>
             </div>
 
-            <div class="card">
+            <div class="card" id="defiSection">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2>🏦 DeFi Positions</h2>
+                    <h2 style="cursor: pointer;" onclick="scrollToSection('defiSection')">🏦 DeFi Positions</h2>
                     <div id="defiLoadingStatus" class="chain-loading" style="display: none;">
                         <div class="chain-loading-spinner"></div>
                         <span id="defiLoadingText">Loading...</span>
@@ -1522,10 +1629,94 @@
             }
         }
 
+        // Scroll functions
+        function scrollToWallet() {
+            const walletSection = document.getElementById('walletSection');
+            if (walletSection) {
+                walletSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function scrollToDefi() {
+            const defiSection = document.getElementById('defiSection');
+            if (defiSection) {
+                defiSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function scrollToTopSmooth() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show/hide scroll to top button
+        window.addEventListener('scroll', function() {
+            const scrollToTopBtn = document.getElementById('scrollToTop');
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+
+        // Scroll functions
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show/hide scroll to top button
+        window.addEventListener('scroll', function() {
+            const scrollToTopBtn = document.getElementById('scrollToTop');
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+
+        // URL routing functions
+        function getAddressFromURL() {
+            const path = window.location.pathname;
+            const match = path.match(/\/address\/(.+)/);
+            return match ? match[1] : null;
+        }
+
+        function updateURL(address) {
+            const newURL = `/address/${address}`;
+            window.history.pushState({ address: address }, '', newURL);
+        }
+
+        function checkAddressFromURL() {
+            const address = getAddressFromURL();
+            if (address) {
+                console.log('Address found in URL:', address);
+                document.getElementById('addressInput').value = address;
+                // Small delay to ensure DOM is ready
+                setTimeout(() => checkAddress(), 100);
+            }
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.address) {
+                document.getElementById('addressInput').value = event.state.address;
+                checkAddress();
+            }
+        });
+
         // Load saved theme
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.getElementById('themeToggle').checked = savedTheme === 'light';
+
+        // Check for URL parameter on page load
+        window.addEventListener('DOMContentLoaded', checkAddressFromURL);
 
         // Local Storage Manager
         const CACHE_KEY = 'portfolio_cache';
@@ -1627,7 +1818,10 @@
                 'BNB': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png',
                 'WBNB': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png',
                 'AVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png',
-                'WAVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png'
+                'WAVAX': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png',
+                'VERSE': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png',
+                'stVERSE': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png',
+                'vTeam': 'https://verse.bitcoin.com/icons/verse-icon-512x512.png'
             };
             
             const coingeckoId = tokenToCoinGecko[symbol];
@@ -1919,6 +2113,9 @@
             try {
                 const address = await resolveENS(input);
                 currentAddress = address;
+                
+                // Update URL with the resolved address
+                updateURL(address);
 
                 if (!forceRefresh) {
                     const cached = getCachedData(address);
@@ -2064,8 +2261,9 @@
                 return;
             }
 
-            // Group Aave positions by chain
+            // Group Aave and Verse positions by chain
             const aavePositions = {};
+            const versePositions = {};
             const otherPositions = [];
             
             filtered.forEach(position => {
@@ -2082,6 +2280,13 @@
                         console.log('  -> Adding to supply');
                         aavePositions[key].supply.push(position);
                     }
+                } else if (position.protocol === 'Verse') {
+                    const key = position.chain;
+                    if (!versePositions[key]) {
+                        versePositions[key] = [];
+                    }
+                    console.log('  -> Adding to Verse positions');
+                    versePositions[key].push(position);
                 } else {
                     console.log('  -> Adding to other positions');
                     otherPositions.push(position);
@@ -2190,6 +2395,64 @@
                         </div>
                         <div class="usd-value">
                             <div class="usd-amount mono negative">-$${formatNumber(valueUsd)}</div>
+                        </div>
+                    </div>`;
+                });
+            });
+
+            // Display grouped Verse positions
+            Object.keys(versePositions).forEach(chain => {
+                const positions = versePositions[chain];
+                const totalValue = positions.reduce((sum, p) => sum + parseFloat(p.value_usd || 0), 0);
+                
+                html += `
+                <div class="wide-card defi-card aave-group" style="border-left-color: #00D4AA;">
+                    <div class="token-icon-wrapper">
+                        <div class="token-icon">
+                            ${getTokenIcon('VERSE')}
+                        </div>
+                        <div class="token-info">
+                            <div class="token-symbol">
+                                Verse Staking
+                                <span class="protocol-badge" style="background: rgba(0, 212, 170, 0.2); color: #00D4AA;">Staking</span>
+                            </div>
+                            <div class="position-type">${getChainIcon(chain)}</div>
+                        </div>
+                    </div>
+                    <div class="token-amount">
+                        <div class="aave-summary">
+                            <div class="aave-line">💎 Total Staked</div>
+                        </div>
+                    </div>
+                    <div class="usd-value">
+                        <div class="usd-amount mono">$${formatNumber(totalValue)}</div>
+                        <div class="amount-label">Total Value</div>
+                    </div>
+                </div>`;
+
+                // Show individual Verse positions
+                positions.forEach(position => {
+                    const valueUsd = parseFloat(position.value_usd) || 0;
+                    html += `
+                    <div class="wide-card defi-card aave-detail" style="border-left-color: #00D4AA;">
+                        <div class="token-icon-wrapper">
+                            <div class="token-icon">
+                                ${getTokenIcon(position.token.split('/')[0])}
+                            </div>
+                            <div class="token-info">
+                                <div class="token-symbol">
+                                    ${position.token}
+                                    <span class="protocol-badge supply-badge" style="background: rgba(0, 212, 170, 0.15); color: #00D4AA;">Staked</span>
+                                </div>
+                                <div class="position-type">${getChainIcon(position.chain)}</div>
+                            </div>
+                        </div>
+                        <div class="token-amount">
+                            <div class="amount-value mono">${formatTokenAmount(position.amount)}</div>
+                            <div class="amount-label">${position.token}</div>
+                        </div>
+                        <div class="usd-value">
+                            <div class="usd-amount mono">$${formatNumber(valueUsd)}</div>
                         </div>
                     </div>`;
                 });
@@ -2577,5 +2840,10 @@
             <a href="https://rindexer.xyz" target="_blank" rel="noopener">Rindexer</a>
         </div>
     </div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTop" class="scroll-to-top" onclick="scrollToTopSmooth()" title="Scroll to top">
+        ↑
+    </button>
 </body>
 </html>
