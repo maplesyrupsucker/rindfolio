@@ -1,68 +1,121 @@
-# 🔍 EVM Balance Checker
+# 🔍 Multi-Chain Portfolio Tracker
 
-A powerful EVM balance checker that displays an Ethereum address's balance, DeFi positions, and transaction history. Built with **Beads** for task management and **rindexer** for blockchain indexing.
+A powerful multi-chain portfolio tracker that displays wallet balances, DeFi positions, and portfolio analytics across Ethereum, Arbitrum, Polygon, Avalanche, BNB Chain, and Base. Built with **React + Vite** frontend and **Flask** API backend.
 
 ## ✨ Features
 
-- 💰 **Real-time Balance Checking** - Check ETH and ERC20 token balances
-- 🏦 **DeFi Positions** - View token holdings and positions
-- 📜 **Transaction History** - Browse recent transactions with block details
-- 🎨 **Beautiful UI** - Modern, responsive web interface
-- ⚡ **Fast Indexing** - Powered by rindexer for efficient blockchain data access
-- 🔗 **Multi-chain Ready** - Easy to extend to other EVM chains
+- 💰 **Multi-Chain Balance Checking** - Check balances across 6+ EVM chains
+- 🏦 **DeFi Positions** - View lending, borrowing, and liquidity positions
+- 📊 **Interactive Charts** - Pie charts showing portfolio breakdown by token/chain and DeFi by protocol/chain
+- 🔗 **Wallet Connection** - Connect via Browser Wallet (MetaMask) or WalletConnect QR
+- 🎨 **Beautiful UI** - Modern, responsive React interface with dark/light theme
+- 🖼️ **Token Icons** - Real token logos with fallback chain
+- ⚡ **Fast API** - Flask backend with Web3.py for efficient blockchain queries
+- 🔍 **ENS Support** - Resolve ENS names to addresses
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.9+
-- Docker & Docker Compose
-- Node.js (for rindexer)
+- Node.js 18+ (or Bun)
+- Docker & Docker Compose (optional, for rindexer)
 
 ### Installation
 
 1. **Clone the repository**
 ```bash
-cd /Users/slavid/Documents/GitHub/rindfolio/evm-balance-checker
+cd evm-balance-checker
 ```
 
-2. **Install Python dependencies**
+2. **Install Python dependencies (Backend)**
 ```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. **Set up environment variables**
+3. **Install Node.js dependencies (Frontend)**
 ```bash
-cp .env.example .env
-# Edit .env with your RPC URLs if needed
+bun install
+# or: npm install
 ```
 
-4. **Start the database and indexer**
+4. **Set up environment variables**
 ```bash
-docker-compose up -d
+# Create .env file with your RPC URLs
+echo "RPC_URL=https://mainnet.infura.io/v3/YOUR_API_KEY" > .env
+echo "VITE_RPC_URL=https://mainnet.infura.io/v3/YOUR_API_KEY" >> .env
 ```
 
-Wait for the services to be healthy (about 30 seconds).
+5. **Start the application**
 
-5. **Run the web application**
+**Terminal 1 - Start Flask API Backend:**
 ```bash
+source venv/bin/activate  # Activate virtual environment
 python app.py
+# Flask API runs on http://localhost:5001
+```
+
+**Terminal 2 - Start React Frontend:**
+```bash
+bun run dev
+# or: npm run dev
+# React app runs on http://localhost:5173
 ```
 
 6. **Open your browser**
 ```
-http://localhost:5000
+http://localhost:5173
+```
+
+The React frontend will automatically proxy API requests to Flask backend on port 5001.
+
+### Development Mode
+
+**Running Separately (Recommended for Development):**
+- Flask API: `http://localhost:5001` (Terminal 1)
+- React Dev Server: `http://localhost:5173` (Terminal 2)
+- React proxies `/api/*` requests to Flask automatically
+
+**Hot Module Replacement (HMR):**
+- Changes to React components (`src/*.jsx`) will hot-reload automatically
+- Changes to Flask API (`app.py`) require restarting Flask server
+- Changes to CSS (`src/index.css`) will hot-reload automatically
+
+### Production Build
+
+**Build React frontend:**
+```bash
+bun run build
+# or: npm run build
+# Output: dist/ directory
+```
+
+**Serve Flask with static React build:**
+```python
+# Flask will serve static files from dist/ directory
+# Update Flask routes if needed to serve index.html for all non-API routes
+python app.py
 ```
 
 ## 📖 Usage
 
-1. Enter an Ethereum address in the search box
-2. Click "Check Address" or press Enter
-3. View:
-   - Total portfolio value in USD
-   - Token balances (ETH, USDC, USDT, DAI, WETH, etc.)
-   - DeFi positions
-   - Recent transaction history
+1. **Connect Wallet** (optional):
+   - Click "🌐 Browser Wallet" to connect MetaMask or other browser wallets
+   - Click "📱 WalletConnect" to scan QR code with mobile wallet
+   - Or manually enter an Ethereum address or ENS name
+
+2. **Check Address**:
+   - Enter an Ethereum address or ENS name in the search box
+   - Click "Check Address" or press Enter
+   - Or click a wallet connection button to auto-fill your address
+
+3. **View Results**:
+   - **Portfolio Summary**: Total value, wallet tokens, DeFi positions
+   - **Pie Charts**: Portfolio breakdown by token/chain, DeFi breakdown by protocol/chain
+   - **Wallet Tokens**: All token balances with icons and USD values
+   - **DeFi Positions**: Lending, borrowing, and liquidity positions
 
 ### Example Addresses to Try
 
@@ -74,12 +127,19 @@ http://localhost:5000
 ```
 ┌─────────────────┐
 │   Web Browser   │
+│  (localhost:5173)│
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│  Flask App      │ ◄── Web3.py ──► Ethereum RPC
-│  (app.py)       │
+│  React + Vite   │ ◄── Frontend (Port 5173)
+│  (Full UI)      │
+└────────┬────────┘
+         │ API Calls (/api/*)
+         ▼
+┌─────────────────┐
+│  Flask API      │ ◄── Web3.py ──► Ethereum RPC
+│  (Port 5001)    │
 └────────┬────────┘
          │
          ▼
@@ -96,8 +156,10 @@ http://localhost:5000
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Python Flask, Web3.py
-- **Frontend**: HTML, CSS, Vanilla JavaScript
+- **Backend**: Python Flask (API-only), Web3.py, flask-cors
+- **Frontend**: React 18, Vite, Chart.js, Wagmi (WalletConnect)
+- **Wallet Connection**: Browser Wallet (MetaMask) + WalletConnect QR
+- **Charts**: Chart.js with react-chartjs-2
 - **Indexer**: rindexer (Rust-based EVM indexer)
 - **Database**: PostgreSQL
 - **Task Management**: Beads (bd)
@@ -120,8 +182,14 @@ DEFI_PROTOCOLS = {
 
 Edit `.env`:
 ```bash
-ETH_RPC_URL=https://your-rpc-provider.com
+RPC_URL=https://mainnet.infura.io/v3/YOUR_API_KEY
+VITE_RPC_URL=https://mainnet.infura.io/v3/YOUR_API_KEY
+NEXT_PUBLIC_RPC_URL=https://mainnet.infura.io/v3/YOUR_API_KEY
 ```
+
+- `RPC_URL`: Used by Flask backend
+- `VITE_RPC_URL`: Used by React frontend (build-time)
+- `NEXT_PUBLIC_RPC_URL`: Set in `index.html` for runtime access
 
 ### Indexing More Contracts
 
@@ -141,7 +209,9 @@ contracts:
 
 ## 📊 API Endpoints
 
-### Check Address
+Flask backend provides REST API endpoints (runs on port 5001):
+
+### Check Address (All Chains)
 ```
 GET /api/check/<address>
 ```
@@ -150,11 +220,32 @@ Returns:
 ```json
 {
   "address": "0x...",
-  "balances": [...],
-  "total_value_usd": 12345.67,
-  "transactions": [...],
+  "wallet_balances": [...],
   "defi_positions": [...],
+  "total_value_usd": 12345.67,
+  "wallet_value_usd": 10000.00,
+  "defi_value_usd": 2345.67,
   "timestamp": "2025-11-09T..."
+}
+```
+
+### Check Single Chain
+```
+GET /api/check-chain/<address>/<chain>
+```
+
+Where `<chain>` is: `ethereum`, `arbitrum`, `polygon`, `avalanche`, `bsc`, `base`
+
+### Resolve ENS
+```
+GET /api/resolve-ens/<name>
+```
+
+Returns:
+```json
+{
+  "name": "vitalik.eth",
+  "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 }
 ```
 
@@ -174,6 +265,37 @@ Returns:
 
 ## 🐛 Troubleshooting
 
+### Flask API not starting
+```bash
+# Make sure flask-cors is installed
+pip install flask-cors
+
+# Check if port 5001 is available
+lsof -ti:5001 | xargs kill -9  # Kill process on port 5001
+
+# Start Flask
+python app.py
+```
+
+### React frontend not connecting to API
+- Make sure Flask is running on port 5001
+- Check browser console for CORS errors
+- Verify `vite.config.js` has proxy configured for `/api` → `http://localhost:5001`
+
+### Wallet connection issues
+- Make sure WalletConnect project ID is set in `index.html`
+- For browser wallet: Install MetaMask or another Web3 wallet extension
+- For WalletConnect: Check browser console for errors
+
+### Charts not displaying
+- Make sure `chart.js` and `react-chartjs-2` are installed: `bun install`
+- Check browser console for Chart.js errors
+
+### Token icons not loading
+- Icons use fallback chain: Trust Wallet → CoinGecko → Cryptologos → Text
+- Check browser network tab for failed image requests
+- Icons are loaded from external CDNs
+
 ### Docker services not starting
 ```bash
 docker-compose down -v
@@ -183,6 +305,7 @@ docker-compose up -d
 ### Web3 connection issues
 - Check your RPC URL in `.env`
 - Try a different RPC provider (Infura, Alchemy, etc.)
+- Verify RPC endpoint is accessible
 
 ### No transaction history showing
 - Wait for rindexer to sync (check logs: `docker-compose logs -f rindexer`)

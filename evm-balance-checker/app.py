@@ -4,7 +4,8 @@ EVM Balance Checker - Multi-chain balance, DeFi positions, and transaction histo
 Supports: Ethereum, Arbitrum, Polygon, Avalanche, BNB Chain
 """
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from web3 import Web3
 import requests
 import json
@@ -15,13 +16,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 app = Flask(__name__)
+# Enable CORS for React frontend
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})
+# Enable debug mode for development
+app.config['DEBUG'] = True
 
 # Multi-chain RPC Configuration
 CHAINS = {
     'ethereum': {
         'name': 'Ethereum',
         'chain_id': 1,
-        'rpc': os.getenv('ETH_RPC_URL', 'https://eth.llamarpc.com'),
+        'rpc': os.getenv('RPC_URL') or os.getenv('ETH_RPC_URL', 'https://eth.llamarpc.com'),
         'explorer': 'https://etherscan.io',
         'native_token': 'ETH',
         'coingecko_id': 'ethereum'
@@ -927,15 +932,8 @@ def get_all_balances_multichain(address: str) -> tuple:
     
     return all_wallet_balances, all_defi_positions
 
-@app.route('/')
-def index():
-    """Main page"""
-    return render_template('index.html')
-
-@app.route('/address/<address>')
-def address_route(address):
-    """Direct link to address portfolio"""
-    return render_template('index.html', prefill_address=address)
+# Flask is now API-only - React/Vite handles all frontend
+# Removed template routes - React dev server serves the UI
 
 @app.route('/api/resolve-ens/<name>')
 def resolve_ens(name):
@@ -1068,4 +1066,6 @@ if __name__ == '__main__':
         print(f"  {status} {config['name']} ({config['native_token']})")
     
     print(f"\n✨ Server running at http://localhost:5001\n")
+    # Enable debug mode for development (enables Vite hot reload)
+    app.config['DEBUG'] = True
     app.run(debug=True, host='0.0.0.0', port=5001)

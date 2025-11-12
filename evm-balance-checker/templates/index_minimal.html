@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Chain Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        // Pass WalletConnect project ID to React app
+        window.WALLETCONNECT_PROJECT_ID = '{{ walletconnect_project_id|default("e2e143cd1a87454fa96503c4d6975b11") }}';
+        // Pass prefill address if provided
+        {% if prefill_address %}
+        window.PREFILL_ADDRESS = '{{ prefill_address }}';
+        {% endif %}
+    </script>
+</head>
+<body>
+    <!-- React app will mount here and handle all UI -->
+    <div id="root"></div>
+    
+    <!-- Load React app from Vite dev server (development) or built bundle (production) -->
+    <script type="module" src="http://localhost:5173/src/main.jsx" onerror="this.onerror=null; this.src='{{ url_for('static', filename='wallet-connect.js') }}';"></script>
+</body>
+</html>
+
