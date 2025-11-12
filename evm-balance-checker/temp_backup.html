@@ -1448,8 +1448,7 @@
                     value=""
                 >
                 <button id="checkButton" onclick="checkAddress()">Check Address</button>
-                <!-- Wallet connection buttons -->
-                <div id="walletConnectContainer" style="display: flex; align-items: center; gap: 8px;"></div>
+                <!-- Wallet connect will be inserted here by React -->
             </div>
             <div id="savedAddresses" class="saved-addresses"></div>
         </div>
@@ -3059,223 +3058,21 @@
         ↑
     </button>
 
-    <!-- Load ethers.js for wallet connection (local copy) -->
-    <script src="{{ url_for('static', filename='ethers-5.7.2.umd.min.js') }}" onload="window.ethersLoaded = true;"></script>
-    <!-- Load WalletConnect v2 library (local copy) -->
-    <script src="{{ url_for('static', filename='walletconnect-v2.umd.min.js') }}" onload="window.walletConnectEthereumProvider = window['@walletconnect/ethereum-provider']?.EthereumProvider || null; window.walletConnectLoaded = true;"></script>
-
-    <!-- WalletConnect Integration - Vanilla JavaScript -->
+    <!-- WalletConnect Integration (React + wagmi - same as reference project) -->
     <script>
-        (function() {
-            const WALLETCONNECT_PROJECT_ID = '{{ walletconnect_project_id|default("e2e143cd1a87454fa96503c4d6975b11") }}';
-
-            // Wallet connection state
-            let connectedAddress = null;
-            let walletConnectProvider = null;
-
-            // Create wallet connect buttons
-            function createWalletButtons() {
-                const container = document.getElementById('walletConnectContainer');
-                if (!container) {
-                    console.error('walletConnectContainer not found');
-                    return;
-                }
-
-                // Browser Wallet Button (MetaMask, etc.)
-                const browserBtn = document.createElement('button');
-                browserBtn.id = 'browserWalletBtn';
-                browserBtn.textContent = '🌐 Browser Wallet';
-                browserBtn.style.cssText = 'padding: 14px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: transform 0.2s, box-shadow 0.2s;';
-                browserBtn.onmouseover = function() { this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 5px 15px rgba(102, 126, 234, 0.4)'; };
-                browserBtn.onmouseout = function() { this.style.transform = 'translateY(0)'; this.style.boxShadow = 'none'; };
-                browserBtn.onclick = connectBrowserWallet;
-
-                // WalletConnect Button
-                const wcBtn = document.createElement('button');
-                wcBtn.id = 'walletConnectBtn';
-                wcBtn.textContent = '📱 WalletConnect';
-                wcBtn.style.cssText = 'padding: 14px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: transform 0.2s, box-shadow 0.2s;';
-                wcBtn.onmouseover = function() { this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 5px 15px rgba(102, 126, 234, 0.4)'; };
-                wcBtn.onmouseout = function() { this.style.transform = 'translateY(0)'; this.style.boxShadow = 'none'; };
-                wcBtn.onclick = connectWalletConnect;
-
-                container.appendChild(browserBtn);
-                container.appendChild(wcBtn);
-            }
-
-            // Connect browser wallet (MetaMask, etc.)
-            async function connectBrowserWallet() {
-                try {
-                    if (typeof window.ethereum === 'undefined') {
-                        alert('Please install MetaMask or another Web3 wallet');
-                        return;
-                    }
-
-                    if (typeof ethers === 'undefined') {
-                        alert('ethers.js library not loaded. Please refresh the page.');
-                        return;
-                    }
-
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const accounts = await provider.send('eth_requestAccounts', []);
-
-                    if (accounts && accounts.length > 0) {
-                        connectedAddress = accounts[0];
-                        updateWalletUI();
-                        fillAddressAndCheck(connectedAddress);
-                    }
-                } catch (error) {
-                    if (error.code !== 4001 && error.code !== 'USER_REJECTED') {
-                        console.error('Browser wallet connection error:', error);
-                        alert(`Failed to connect: ${error.message || 'Unknown error'}`);
-                    }
-                }
-            }
-
-            // Connect via WalletConnect v2
-            async function connectWalletConnect() {
-                try {
-                    // Get EthereumProvider from the loaded library
-                    // The library exports to window["@walletconnect/ethereum-provider"]
-                    const EthereumProvider = window.walletConnectEthereumProvider ||
-                                           (window["@walletconnect/ethereum-provider"]?.EthereumProvider) ||
-                                           (window.WalletConnect?.EthereumProvider) ||
-                                           window.EthereumProvider;
-
-                    if (!EthereumProvider) {
-                        console.error('WalletConnect library check:', {
-                            walletConnectEthereumProvider: typeof window.walletConnectEthereumProvider,
-                            walletConnectExport: typeof window["@walletconnect/ethereum-provider"],
-                            windowWalletConnect: typeof window.WalletConnect,
-                            windowEthereumProvider: typeof window.EthereumProvider,
-                            walletConnectLoaded: window.walletConnectLoaded
-                        });
-                        alert('WalletConnect v2 library not loaded yet. Please wait a moment and try again.');
-                        return;
-                    }
-
-                    walletConnectProvider = await EthereumProvider.init({
-                        projectId: WALLETCONNECT_PROJECT_ID,
-                        chains: [1, 42161, 137, 43114, 56, 8453], // Ethereum, Arbitrum, Polygon, Avalanche, BNB, Base
-                        showQrModal: true,
-                        metadata: {
-                            name: 'Multi-Chain Portfolio Tracker',
-                            description: 'Track your crypto portfolio across multiple chains',
-                            url: window.location.origin,
-                            icons: [`${window.location.origin}/favicon.ico`],
-                        },
-                    });
-
-                    await walletConnectProvider.enable();
-                    const accounts = walletConnectProvider.accounts;
-
-                    if (accounts && accounts.length > 0) {
-                        connectedAddress = accounts[0];
-                        updateWalletUI();
-                        fillAddressAndCheck(connectedAddress);
-                    }
-
-                    // Listen for disconnect
-                    walletConnectProvider.on('disconnect', () => {
-                        connectedAddress = null;
-                        walletConnectProvider = null;
-                        updateWalletUI();
-                    });
-                } catch (error) {
-                    if (error.code !== 4001 && error.code !== 'USER_REJECTED') {
-                        console.error('WalletConnect error:', error);
-                        alert(`Failed to connect: ${error.message || 'Unknown error'}`);
-                    }
-                }
-            }
-
-            // Update UI based on connection state
-            function updateWalletUI() {
-                const container = document.getElementById('walletConnectContainer');
-                if (!container) return;
-
-                container.innerHTML = '';
-
-                if (connectedAddress) {
-                    // Show connected address and disconnect button
-                    const addressDiv = document.createElement('div');
-                    addressDiv.style.cssText = 'font-size: 15px; color: white; padding: 14px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; font-family: "JetBrains Mono", monospace; font-weight: 600; margin-right: 8px;';
-                    addressDiv.textContent = `${connectedAddress.substring(0, 6)}...${connectedAddress.substring(connectedAddress.length - 4)}`;
-
-                    const disconnectBtn = document.createElement('button');
-                    disconnectBtn.textContent = 'Disconnect';
-                    disconnectBtn.style.cssText = 'padding: 14px 28px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;';
-                    disconnectBtn.onmouseover = function() { this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 5px 15px rgba(239, 68, 68, 0.4)'; };
-                    disconnectBtn.onmouseout = function() { this.style.transform = 'translateY(0)'; this.style.boxShadow = 'none'; };
-                    disconnectBtn.onclick = disconnectWallet;
-
-                    container.appendChild(addressDiv);
-                    container.appendChild(disconnectBtn);
-                } else {
-                    // Show connect buttons
-                    createWalletButtons();
-                }
-            }
-
-            // Disconnect wallet
-            async function disconnectWallet() {
-                try {
-                    if (walletConnectProvider) {
-                        await walletConnectProvider.disconnect();
-                        walletConnectProvider = null;
-                    }
-                    connectedAddress = null;
-                    updateWalletUI();
-                } catch (error) {
-                    console.error('Disconnect error:', error);
-                }
-            }
-
-            // Fill address input and trigger check
-            function fillAddressAndCheck(address) {
-                const addressInput = document.getElementById('addressInput');
-                if (addressInput) {
-                    addressInput.value = address;
-                    if (typeof checkAddress === 'function') {
-                        checkAddress();
-                    }
-                }
-            }
-
-            // Wait for ethers.js to load, then initialize
-            function initializeWalletConnection() {
-                if (typeof ethers === 'undefined' || !window.ethersLoaded) {
-                    console.log('Waiting for ethers.js to load...');
-                    setTimeout(initializeWalletConnection, 50);
-                    return;
-                }
-
-                console.log('ethers.js loaded, initializing wallet buttons');
-                createWalletButtons();
-
-                // Check if already connected (browser wallet)
-                if (typeof window.ethereum !== 'undefined') {
-                    window.ethereum.on('accountsChanged', (accounts) => {
-                        if (accounts && accounts.length > 0) {
-                            connectedAddress = accounts[0];
-                            updateWalletUI();
-                            fillAddressAndCheck(connectedAddress);
-                        } else {
-                            connectedAddress = null;
-                            updateWalletUI();
-                        }
-                    });
-                }
-            }
-
-            // Start initialization when DOM is ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeWalletConnection);
-            } else {
-                // DOM already loaded
-                initializeWalletConnection();
-            }
-        })();
+        // Pass WalletConnect project ID to React app
+        window.WALLETCONNECT_PROJECT_ID = '{{ walletconnect_project_id|default("e2e143cd1a87454fa96503c4d6975b11") }}';
+        console.log('🔌 WalletConnect Project ID set:', window.WALLETCONNECT_PROJECT_ID);
     </script>
+    <!-- Load React wallet connection component -->
+    <!-- Development: Load from Vite dev server (hot reload) -->
+    <!-- Production: Load from built bundle -->
+    {% if config.DEBUG %}
+    <!-- Development mode: Load from Vite dev server for hot reload -->
+    <script type="module" src="http://localhost:5173/src/main.jsx"></script>
+    {% else %}
+    <!-- Production mode: Load from built bundle -->
+    <script type="module" src="{{ url_for('static', filename='wallet-connect.js') }}"></script>
+    {% endif %}
 </body>
 </html>

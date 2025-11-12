@@ -56,3 +56,9 @@ docker-compose.override.yml
 # Beads
 .beads/
 
+# Node.js / React build artifacts
+node_modules/
+static/
+dist/
+*.log
+
