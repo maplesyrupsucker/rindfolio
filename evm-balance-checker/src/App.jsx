@@ -344,6 +344,16 @@ function App() {
                     </div>
                 </div>
             )}
+            
+            {/* Footer */}
+            <div className="footer">
+                <div className="footer-links">
+                    <span>Powered by</span>
+                    <a href="https://wallet.bitcoin.com" target="_blank" rel="noopener">Bitcoin.com Wallet</a>
+                    <span>&</span>
+                    <a href="https://rindexer.xyz" target="_blank" rel="noopener">Rindexer</a>
+                </div>
+            </div>
         </div>
     )
 }
